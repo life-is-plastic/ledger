@@ -1,0 +1,57 @@
+use crate::sharedopts;
+use crate::util;
+
+/// View transaction totals
+#[derive(clap::Parser)]
+pub struct Sum {
+    #[arg(
+        default_value = "m",
+        help = sharedopts::INTERVAL_HELP,
+        long_help = sharedopts::INTERVAL_LONG_HELP,
+    )]
+    interval: lib::Interval,
+
+    /// Category level to aggregate on
+    ///
+    /// Examples:
+    /// LEVEL = 2: commute/car/gas -> commute/car
+    /// LEVEL = 2: commute/car -> commute/car
+    /// LEVEL = 2: commute -> commute
+    /// LEVEL = 0: commute -> All
+    /// LEVEL = 0: some/other/category -> All
+    #[arg(short, long, default_value_t = 1, verbatim_doc_comment)]
+    level: usize,
+
+    #[command(flatten)]
+    categories_opts: sharedopts::CategoriesOpts,
+}
+
+impl Sum {
+    pub fn run<W>(
+        self,
+        mut stdout: W,
+        rl: lib::Recordlist,
+        charset: &lib::Charset,
+    ) -> anyhow::Result<()>
+    where
+        W: std::io::Write,
+    {
+        let rl = util::filter_rl(
+            &rl,
+            self.interval,
+            &self.categories_opts.categories,
+            &self.categories_opts.not_categories,
+        );
+        let tr = lib::Tree::from(lib::tree::forsum::Config {
+            charset,
+            level: self.level,
+            rl: &rl,
+        });
+        if tr.is_empty() {
+            util::write_no_transactions_msg(&mut stdout, self.interval)?;
+        } else {
+            write!(stdout, "{}", tr)?;
+        }
+        Ok(())
+    }
+}
