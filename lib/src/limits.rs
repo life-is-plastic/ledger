@@ -1,7 +1,7 @@
 use crate::Cents;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct Limits(std::collections::BTreeMap<u32, Cents>);
+pub struct Limits(std::collections::BTreeMap<u16, Cents>);
 
 impl Limits {
     pub fn new() -> Self {
@@ -16,15 +16,16 @@ impl Limits {
         self.0.len()
     }
 
-    pub fn set(&mut self, year: u32, limit: Cents) {
+    pub fn set(&mut self, year: u16, limit: Cents) {
         self.0.insert(year, limit);
     }
 
-    pub fn remove(&mut self, year: u32) -> Option<Cents> {
+    pub fn remove(&mut self, year: u16) -> Option<Cents> {
         self.0.remove(&year)
     }
 
-    pub fn inception_to_year(&self, year: u32) -> i64 {
+    /// Returns total accumulated yearly room up to and including `year`.
+    pub fn inception_to_year(&self, year: u16) -> i64 {
         self.iter()
             .map(|(y, room)| match y <= year {
                 true => room.0,
@@ -33,7 +34,7 @@ impl Limits {
             .sum()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (u32, Cents)> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = (u16, Cents)> + '_ {
         self.0.iter().map(|(&k, &v)| (k, v))
     }
 }
@@ -75,7 +76,7 @@ mod tests {
             (2, Cents(345)),
         ],
     )]
-    fn test_serde(#[case] s: &str, #[case] want: Vec<(u32, Cents)>) {
+    fn test_serde(#[case] s: &str, #[case] want: Vec<(u16, Cents)>) {
         let got = s.parse::<Limits>().unwrap();
         let want = Limits(want.into_iter().collect());
         assert_eq!(got, want);

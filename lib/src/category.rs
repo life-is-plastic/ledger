@@ -34,7 +34,7 @@ impl std::fmt::Display for Category {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum ParseError {
     #[error("input is empty")]
     Empty,

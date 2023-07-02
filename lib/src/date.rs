@@ -1,42 +1,46 @@
-use chrono::Datelike;
-
 use crate::Datepart;
 
 /// A date type without time or timezone information. Values are guaranteed to
 /// be between `0000-01-01` and `9999-12-31`.
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    // We rely on `time::Date` using `yyyy-mm-dd` format for
+    // serialization/deserialization.
+    serde::Serialize,
+    serde::Deserialize,
 )]
-pub struct Date(chrono::NaiveDate);
+pub struct Date(time::Date);
 
 impl Date {
     /// 0000-01-01
-    pub const MIN: Self = Date(unsafe { std::mem::transmute(20_i32) });
+    pub const MIN: Self = Self(time::Date::__from_ordinal_date_unchecked(0, 1));
 
     /// 9999-12-31
-    pub const MAX: Self = Date(unsafe { std::mem::transmute(81917659_i32) });
+    pub const MAX: Self = Self(time::Date::__from_ordinal_date_unchecked(
+        9999,
+        time::util::days_in_year(9999),
+    ));
 
-    pub fn year(self) -> u32 {
-        self.0.year() as u32
+    pub const fn year(self) -> u16 {
+        self.0.year() as u16
     }
 
-    pub fn month(self) -> u32 {
-        self.0.month()
+    pub const fn month(self) -> u16 {
+        self.0.month() as u16
     }
 
-    pub fn day(self) -> u32 {
-        self.0.day()
+    pub const fn day(self) -> u16 {
+        self.0.day() as u16
     }
 
-    pub fn part(self, part: Datepart) -> u32 {
-        match part {
-            Datepart::Year => self.year(),
-            Datepart::Month => self.month(),
-            Datepart::Day => self.day(),
-        }
-    }
-
-    fn new(inner: chrono::NaiveDate) -> Option<Self> {
+    fn new(inner: time::Date) -> Option<Self> {
         let dt = Self(inner);
         if dt >= Self::MIN && dt <= Self::MAX {
             Some(dt)
@@ -45,78 +49,78 @@ impl Date {
         }
     }
 
-    pub fn from_ymd(year: u32, month: u32, day: u32) -> Option<Self> {
-        chrono::NaiveDate::from_ymd_opt(year as i32, month, day).and_then(Self::new)
+    pub fn from_ymd(year: u16, month: u16, day: u16) -> Option<Self> {
+        let year = i32::try_from(year).ok()?;
+        let month = time::Month::try_from(u8::try_from(month).ok()?).ok()?;
+        let day = u8::try_from(day).ok()?;
+        time::Date::from_calendar_date(year, month, day)
+            .ok()
+            .and_then(Self::new)
+    }
+
+    fn from_ymd_unchecked(year: u16, month: u16, day: u16) -> Self {
+        Self::from_ymd(year, month, day).expect("date should be valid")
     }
 
     /// Returns the local date.
     #[cfg(not(test))]
     pub fn today() -> Self {
-        Self(chrono::Local::now().date_naive())
+        Self(
+            time::OffsetDateTime::now_local()
+                .expect("current datetime should be determinable")
+                .date(),
+        )
     }
 
     /// Returns the local date.
     #[cfg(test)]
     pub fn today() -> Self {
-        Self::from_ymd(2015, 3, 30).expect("'today' for tests should be valid")
+        Self::from_ymd_unchecked(2015, 3, 30)
     }
 
     pub fn format(
         self,
-        fmt: &str,
-    ) -> chrono::format::DelayedFormat<chrono::format::strftime::StrftimeItems<'_>> {
+        fmt: &(impl time::formatting::Formattable + ?Sized),
+    ) -> Result<String, time::error::Format> {
         self.0.format(fmt)
     }
 
     pub fn first_of(self, part: Datepart) -> Self {
         match part {
             Datepart::Day => self,
-            Datepart::Year => Self::from_ymd(self.year(), 1, 1)
-                .expect("first day of a valid year should be a valid date"),
-            Datepart::Month => Self::from_ymd(self.year(), self.month(), 1)
-                .expect("first day of a valid month should be a valid date"),
+            Datepart::Month => Self::from_ymd_unchecked(self.year(), self.month(), 1),
+            Datepart::Year => Self::from_ymd_unchecked(self.year(), 1, 1),
         }
     }
 
     pub fn last_of(self, part: Datepart) -> Self {
         match part {
             Datepart::Day => self,
-            Datepart::Year => Self::from_ymd(self.year(), 12, 31)
-                .expect("final day of a valid year should be a valid date"),
-            Datepart::Month => Self::from_ymd(
+            Datepart::Month => Self::from_ymd_unchecked(
                 self.year(),
                 self.month(),
-                if (self.month() == 2)
-                    && (self.year() % 4 == 0)
-                    && ((self.year() % 100 != 0) || (self.year() % 400 == 0))
-                {
-                    29
-                } else {
-                    [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][self.month() as usize]
-                },
-            )
-            .expect("final day of month should be computed correctly"),
+                time::util::days_in_year_month(self.0.year(), self.0.month()) as u16,
+            ),
+            Datepart::Year => Self::from_ymd_unchecked(self.year(), 12, 31),
         }
     }
 
     /// Offsets the given date by the given datepart, returning `None` if the
     /// resultant date is out of bounds.
     ///
-    /// When shifting by years or months, clamps the resultant date's day to the
-    /// resultant month's last-day-of-month. For example, if the original date
-    /// is a Feb 29, shifting by 1 year will yield the next year's Feb 28.
+    /// When shifting by years or months, this function clamps the resultant
+    /// date's day to the resultant month's last-day-of-month. For example, if
+    /// the original date is a Feb 29, shifting by 1 year will yield the next
+    /// year's Feb 28.
     pub fn shift(self, part: Datepart, offset: i32) -> Option<Self> {
         let (y, m) = match part {
             Datepart::Day => {
                 return self
                     .0
-                    .checked_add_signed(chrono::Duration::days(offset as i64))
+                    .checked_add(time::Duration::days(offset as i64))
                     .and_then(Self::new)
             }
-            Datepart::Year => (
-                (self.year() as i32).checked_add(offset)?.try_into().ok()?,
-                self.month(),
-            ),
+            Datepart::Year => ((self.year() as i32).checked_add(offset)?, self.0.month()),
             Datepart::Month => {
                 let mut y = self.year() as i32;
                 let mut m = (self.month() as i32).checked_add(offset)?;
@@ -127,27 +131,34 @@ impl Date {
                     y += (m - 12) / 12;
                     m = (m % 12 + 11) % 12 + 1;
                 }
-                (y as u32, m as u32)
+                (
+                    y,
+                    time::Month::try_from(u8::try_from(m).expect("m should be bounded by [1, 12]"))
+                        .expect("m should be bounded by [1, 12]"),
+                )
             }
         };
-        let dt = Self::from_ymd(y, m, 1)?.last_of(Datepart::Month);
-        dt.0.with_day(dt.day().min(self.day())).and_then(Self::new)
+        let d = time::util::days_in_year_month(y, m).min(self.0.day()) as u16;
+        let y = u16::try_from(y).ok()?;
+        let m = m as u16;
+        Self::from_ymd(y, m, d)
     }
 }
 
 impl std::fmt::Display for Date {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        // This relies on the fact that `time::Date` formats as `yyyy-mm-dd`.
         self.0.fmt(f)
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum ParseError {
     #[error("input is empty")]
     Empty,
     #[error(transparent)]
-    BadFormat(#[from] chrono::format::ParseError),
-    #[error("date is before 0000-01-01 or after 9999-12-31")]
+    BadFormat(#[from] time::error::Parse),
+    #[error("date is before {} or after {}", Date::MIN, Date::MAX)]
     OutOfRange,
     #[error("first character is not one of {{y, Y, m, M, d, D}}")]
     InvalidFirstChar,
@@ -166,8 +177,7 @@ impl std::str::FromStr for Date {
             return Err(Self::Err::Empty);
         }
         if s.as_bytes()[0].is_ascii_digit() {
-            return s
-                .parse::<chrono::NaiveDate>()
+            return time::Date::parse(s, &time::format_description::well_known::Iso8601::DEFAULT)
                 .map_err(Self::Err::BadFormat)
                 .and_then(|x| Self::new(x).ok_or(Self::Err::OutOfRange));
         }
@@ -216,16 +226,6 @@ mod tests {
     fn test_iso8601_conv(#[case] s: &str, #[case] dt: Date) {
         assert_eq!(s.parse::<Date>().unwrap(), dt);
         assert_eq!(dt.to_string(), s);
-    }
-
-    #[rstest]
-    #[case("2015-03-30", "%Y %B%d", Some("2015 March30"))]
-    #[case("2015-03-30", "%Y %Z", None)]
-    fn test_format(#[case] dt: Date, #[case] fmt: &str, #[case] want: Option<&str>) {
-        use std::fmt::Write;
-        let mut s = String::new();
-        let got = write!(s, "{}", dt.format(fmt)).ok().map(|()| s.as_str());
-        assert_eq!(got, want);
     }
 
     #[rstest]
@@ -289,9 +289,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case("015-03-30", Date::from_ymd(15, 3, 30))]
-    #[case("015-3-30", Date::from_ymd(15, 3, 30))]
-    #[case("015-3-3", Date::from_ymd(15, 3, 3))]
+    #[case("2015-03-30", Date::from_ymd(2015, 3, 30))]
     #[case("y", Date::today().first_of(Datepart::Year).into())]
     #[case("Y", Date::today().last_of(Datepart::Year).into())]
     #[case("y+0", Date::today().first_of(Datepart::Year).into())]
@@ -310,6 +308,9 @@ mod tests {
     #[case("0000-00-01", None)]
     #[case("0000-00-01", None)]
     #[case("10000-01-01", None)]
+    #[case("015-03-30", None)]
+    #[case("2015-3-30", None)]
+    #[case("2015-03-3", None)]
     #[case("y+9999", None)]
     #[case("yy", None)]
     #[case("a", None)]

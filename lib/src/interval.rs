@@ -103,7 +103,7 @@ impl std::fmt::Display for Interval {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum ParseError {
     #[error(transparent)]
     Date(#[from] date::ParseError),

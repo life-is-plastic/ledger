@@ -68,7 +68,7 @@ impl Lim {
 fn update_limits<W>(
     mut stdout: W,
     mut limits: lib::Limits,
-    year: u32,
+    year: u16,
     amount: lib::Cents,
     fs: &lib::Fs,
 ) -> anyhow::Result<()>
@@ -108,7 +108,7 @@ fn get_limitkind(arg: Option<lib::Limitkind>, default: &str) -> anyhow::Result<l
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct YearArg(u32);
+struct YearArg(u16);
 
 impl std::str::FromStr for YearArg {
     type Err = anyhow::Error;
@@ -123,19 +123,14 @@ impl std::str::FromStr for YearArg {
             let offset = std::str::from_utf8(&s.as_bytes()[1..])
                 .expect("remaining bytes should form a valid string")
                 .parse::<i32>()?;
-            let mut y = (lib::Date::today().year() as i32)
+            (lib::Date::today().year() as i32)
                 .checked_add(offset)
-                .unwrap_or(10000);
-            if y < 0 {
-                y = 10000;
-            }
-            y as u32
+                .unwrap_or(-1)
         };
-        if year > 9999 {
+        if year < 0 || year > 9999 {
             anyhow::bail!("year is out of range")
-        } else {
-            Ok(Self(year))
         }
+        Ok(Self(year as u16))
     }
 }
 
@@ -160,7 +155,7 @@ mod tests {
     fn test_update_limits(
         mut env: Env,
         #[case] limits: lib::Limits,
-        #[case] year: u32,
+        #[case] year: u16,
         #[case] amount: lib::Cents,
         #[case] want_limits: lib::Limits,
         #[case] want_output: &str,
@@ -208,6 +203,7 @@ mod tests {
     #[case("10000")]
     #[case("y-9999")]
     #[case("Y+9999")]
+    #[case("y-99999999999999999999999999999999999999999999999")]
     #[case("yy")]
     #[case("a")]
     fn test_yeararg_from_str_failing(#[case] s: &str) {

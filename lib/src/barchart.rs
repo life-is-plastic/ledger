@@ -74,16 +74,13 @@ impl Barchart<'_> {
         self.bounds.is_empty()
     }
 
-    fn label(
-        &self,
-        dt: Date,
-    ) -> chrono::format::DelayedFormat<chrono::format::strftime::StrftimeItems<'static>> {
+    fn label(&self, dt: Date) -> String {
         let fmt = match self.unit {
-            Datepart::Year => "%Y",
-            Datepart::Month => "%Y %b",
-            Datepart::Day => "%Y-%m-%d",
+            Datepart::Year => time::macros::format_description!("[year]"),
+            Datepart::Month => time::macros::format_description!("[year] [month repr:short]"),
+            Datepart::Day => time::macros::format_description!("[year]-[month]-[day]"),
         };
-        dt.format(fmt)
+        dt.format(fmt).expect("formatting should succeed")
     }
 
     fn barlen(&self, val: Cents) -> usize {
