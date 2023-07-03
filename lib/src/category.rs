@@ -8,7 +8,7 @@ impl Category {
     pub const SEP: &str = "/";
     pub const LEVEL0: &str = "All";
 
-    pub fn str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         &self.0
     }
 
@@ -22,15 +22,15 @@ impl Category {
             .map(|(i, _)| i)
             .nth(level - 1)
         {
-            Some(i) => &self.str()[..i],
-            None => self.str(),
+            Some(i) => &self.as_str()[..i],
+            None => self.as_str(),
         }
     }
 }
 
 impl std::fmt::Display for Category {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.str().fmt(f)
+        self.as_str().fmt(f)
     }
 }
 

@@ -3,8 +3,8 @@ pub mod forview;
 
 use crate::Charset;
 
-pub struct Tree<'cs> {
-    charset: &'cs Charset,
+pub struct Tree<'a> {
+    charset: &'a Charset,
     root: Node,
 }
 
@@ -76,18 +76,6 @@ impl std::fmt::Display for Tree<'_> {
             }
         }
         Ok(())
-    }
-}
-
-impl<'cs> From<forsum::Config<'cs, '_>> for Tree<'cs> {
-    fn from(config: forsum::Config<'cs, '_>) -> Self {
-        config.into_tree()
-    }
-}
-
-impl<'cs> From<forview::Config<'cs, '_>> for Tree<'cs> {
-    fn from(config: forview::Config<'cs, '_>) -> Self {
-        config.into_tree()
     }
 }
 

@@ -7,6 +7,7 @@ mod rm;
 mod sum;
 mod view;
 
+use crate::Output;
 use anyhow::Context;
 
 /// Cash flow tracker
@@ -30,13 +31,9 @@ enum Commands {
 }
 
 impl Root {
-    fn run<W>(self, mut stdout: W, fs: &lib::Fs) -> anyhow::Result<()>
-    where
-        W: std::io::Write,
-    {
-        let root = <Self as clap::Parser>::parse();
-        if let Commands::Init(cmd) = root.command {
-            return cmd.run(&mut stdout, fs);
+    fn run(self, fs: &lib::Fs) -> anyhow::Result<Output> {
+        if let Commands::Init(cmd) = self.command {
+            return cmd.run(fs);
         }
 
         if !fs.is_repo() {
@@ -62,15 +59,15 @@ impl Root {
             )
         })?;
 
-        match root.command {
+        match self.command {
             Commands::Init(_) => unreachable!(),
-            Commands::Log(cmd) => cmd.run(&mut stdout, rl, &charset, &config, fs),
-            Commands::Rm(cmd) => cmd.run(&mut stdout, rl, &charset, &config, fs),
-            Commands::View(cmd) => cmd.run(&mut stdout, rl, &charset, &config),
-            Commands::Cats(cmd) => cmd.run(&mut stdout, rl),
-            Commands::Sum(cmd) => cmd.run(&mut stdout, rl, &charset),
-            Commands::Plot(cmd) => cmd.run(&mut stdout, rl, &charset),
-            Commands::Lim(cmd) => cmd.run(&mut stdout, rl, &charset, &config, fs),
+            Commands::Log(cmd) => cmd.run(rl, charset, &config, fs),
+            Commands::Rm(cmd) => cmd.run(rl, charset, &config, fs),
+            Commands::View(cmd) => cmd.run(rl, charset, &config),
+            Commands::Cats(cmd) => cmd.run(rl),
+            Commands::Sum(cmd) => cmd.run(rl, charset),
+            Commands::Plot(cmd) => cmd.run(rl, charset),
+            Commands::Lim(cmd) => cmd.run(rl, charset, &config, fs),
         }
     }
 }
@@ -78,13 +75,11 @@ impl Root {
 pub fn main() {
     fn try_main() -> anyhow::Result<()> {
         let root = <Root as clap::Parser>::parse();
-        let mut stdout = std::io::stdout();
         let cwd = std::env::current_dir().context("failed to resolve current working directory")?;
         let fs = lib::Fs::new(cwd);
-
-        let res = root.run(&stdout, &fs);
-        <std::io::Stdout as std::io::Write>::flush(&mut stdout)?;
-        res
+        let output = root.run(&fs)?;
+        print!("{}", output);
+        Ok(())
     }
 
     if let Err(e) = try_main() {

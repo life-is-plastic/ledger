@@ -24,26 +24,11 @@ where
         .iter()
         .filter({
             |r| {
-                incl.iter().any(|p| p.matches(r.category().str()))
-                    && !excl.iter().any(|p| p.matches(r.category().str()))
+                incl.iter().any(|p| p.matches(r.category().as_str()))
+                    && !excl.iter().any(|p| p.matches(r.category().as_str()))
             }
         })
         .collect::<lib::Recordlist>()
-}
-
-pub fn write_no_transactions_msg<W>(mut stdout: W, interval: lib::Interval) -> std::io::Result<()>
-where
-    W: std::io::Write,
-{
-    if interval.start == interval.end {
-        writeln!(stdout, "[{}] No transactions.", interval.start)
-    } else {
-        writeln!(
-            stdout,
-            "[{}, {}] No transactions.",
-            interval.start, interval.end
-        )
-    }
 }
 
 #[cfg(test)]
@@ -74,6 +59,7 @@ pub mod testing {
         }
     }
 
+    /// TODO(remove)
     #[rstest::fixture]
     pub fn rl() -> lib::Recordlist {
         r#"

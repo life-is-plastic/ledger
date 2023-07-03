@@ -6,8 +6,8 @@ use crate::Limitkind;
 use crate::Limits;
 use crate::Recordlist;
 
-pub struct Limitprinter<'cs> {
-    charset: &'cs Charset,
+pub struct Limitprinter<'a> {
+    charset: &'a Charset,
     /// Sorted yearly limits.
     limits: Vec<(String, Cents)>,
     /// Total limit and remaining limit, in that order.
@@ -15,27 +15,37 @@ pub struct Limitprinter<'cs> {
     alignment_charlen: usize,
 }
 
-pub struct Config<'cs, 'l, 'rl> {
-    pub charset: &'cs Charset,
+pub struct Config {
+    pub charset: Charset,
     pub today: Date,
     pub kind: Limitkind,
-    pub limits: &'l Limits,
-    pub rl: &'rl Recordlist,
+    pub limits: Limits,
+    pub rl: Recordlist,
 }
 
-impl<'cs> From<Config<'cs, '_, '_>> for Limitprinter<'cs> {
-    fn from(config: Config<'cs, '_, '_>) -> Self {
-        let limits = config
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            charset: Default::default(),
+            today: Date::today(),
+            kind: Limitkind::Rrsp,
+            limits: Default::default(),
+            rl: Default::default(),
+        }
+    }
+}
+
+impl Config {
+    pub fn to_limitprinter<'a>(&'a self) -> Limitprinter<'a> {
+        let limits = self
             .limits
             .iter()
-            .filter(|&(year, _)| year <= config.today.year())
+            .filter(|&(year, _)| year <= self.today.year())
             .map(|(year, limit)| (format!("{:0>4}", year), limit))
             .collect::<Vec<_>>();
 
         let total = limits.iter().map(|&(_, limit)| limit).sum::<Cents>();
-        let remaining = config
-            .kind
-            .remaining(config.limits, config.rl, config.today);
+        let remaining = self.kind.remaining(&self.limits, &self.rl, self.today);
         let summary = [("Total".into(), total), ("Remaining".into(), remaining)];
 
         fn char_count((label, value): &(String, Cents)) -> usize {
@@ -50,7 +60,7 @@ impl<'cs> From<Config<'cs, '_, '_>> for Limitprinter<'cs> {
         );
 
         Limitprinter {
-            charset: config.charset,
+            charset: &self.charset,
             limits,
             summary,
             alignment_charlen,
@@ -159,13 +169,13 @@ mod tests {
         #[case] want: &str,
     ) {
         let config = Config {
-            charset: &Charset::default(),
+            charset: Charset::default(),
             today,
             kind,
-            limits: &limits,
-            rl: &rl,
+            limits,
+            rl,
         };
-        let printer = Limitprinter::from(config);
+        let printer = config.to_limitprinter();
         assert_eq!(printer.to_string(), want)
     }
 }

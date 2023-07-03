@@ -5,18 +5,33 @@ use crate::Record;
 use crate::Recordlist;
 use crate::Tree;
 
-pub struct Config<'cs, 'rl> {
-    pub charset: &'cs Charset,
+#[derive(Default)]
+pub struct Config {
+    pub charset: Charset,
     pub first_iid: usize,
-    pub rl: &'rl Recordlist,
+    pub rl: Recordlist,
     /// Additional transformations to apply to a record's as-a-node string
     /// representation (records are leaf nodes). If not `None`, this is called
     /// once for each record in `rl`.
-    pub leaf_string_postprocessor: Option<&'rl (dyn Fn(LsppArgs<'rl>) -> String + 'rl)>,
+    pub leaf_string_postprocessor: Option<
+        Box<
+            dyn Fn(
+                &Self,
+                &Record,
+                // Record's zero-based index-in-date.
+                usize,
+                // Record's original node string. Will be in one of these formats depending on
+                // whether or not `r`'s note field is empty:
+                //  {iid} -- {amount} {category}
+                //  {iid} -- {amount} {category}: {note}
+                String,
+            ) -> String,
+        >,
+    >,
 }
 
-pub struct LsppArgs<'rl> {
-    pub r: &'rl Record,
+pub struct LsppArgs<'a> {
+    pub r: &'a Record,
     /// `r`'s zero-based index-in-date.
     pub iid0: usize,
     /// `r`'s original node string. Will be in one of these formats depending on
@@ -26,15 +41,15 @@ pub struct LsppArgs<'rl> {
     pub leaf_string: String,
 }
 
-impl<'cs, 'rl> Config<'cs, 'rl> {
-    pub(super) fn into_tree(self) -> Tree<'cs> {
+impl Config {
+    pub fn to_tree<'a>(&'a self) -> Tree<'a> {
         let alignment_charlen = self.get_alignment_charlen();
         let mut root = Node::default();
         for (iid0, r) in self.rl.iter_with_iid() {
             self.make_year(&mut root, r, iid0, alignment_charlen);
         }
         Tree {
-            charset: self.charset,
+            charset: &self.charset,
             root,
         }
     }
@@ -55,7 +70,7 @@ impl<'cs, 'rl> Config<'cs, 'rl> {
 
     /// Constructs the string payload for the leaf node representing the given
     /// record.
-    fn leaf_data(&self, r: &'rl Record, iid0: usize, alignment_charlen: usize) -> String {
+    fn leaf_data(&self, r: &Record, iid0: usize, alignment_charlen: usize) -> String {
         let iid = iid0 + self.first_iid;
         let dash_count = alignment_charlen
             - util::count_digits(iid as u64)
@@ -75,27 +90,23 @@ impl<'cs, 'rl> Config<'cs, 'rl> {
             s.push(' ');
         }
         s.push(' ');
-        s.push_str(r.category().str());
+        s.push_str(r.category().as_str());
         if !r.note().is_empty() {
             s.push_str(": ");
             s.push_str(r.note());
         }
         match self.leaf_string_postprocessor {
-            Some(lspp) => lspp(LsppArgs {
-                r,
-                iid0,
-                leaf_string: s,
-            }),
+            Some(ref lspp) => lspp(self, r, iid0, s),
             None => s,
         }
     }
 
-    fn make_leaf(&self, day: &mut Node, r: &'rl Record, iid0: usize, alignment_charlen: usize) {
+    fn make_leaf(&self, day: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
         let data = self.leaf_data(r, iid0, alignment_charlen);
         day.children.push(Node::new(data.into()));
     }
 
-    fn make_day(&self, month: &mut Node, r: &'rl Record, iid0: usize, alignment_charlen: usize) {
+    fn make_day(&self, month: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
         #[rustfmt::skip]
         let strs = &[
             "",
@@ -112,7 +123,7 @@ impl<'cs, 'rl> Config<'cs, 'rl> {
         self.make_leaf(day, r, iid0, alignment_charlen);
     }
 
-    fn make_month(&self, year: &mut Node, r: &'rl Record, iid0: usize, alignment_charlen: usize) {
+    fn make_month(&self, year: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
         #[rustfmt::skip]
         let strs = &[
             "",
@@ -127,7 +138,7 @@ impl<'cs, 'rl> Config<'cs, 'rl> {
         self.make_day(month, r, iid0, alignment_charlen);
     }
 
-    fn make_year(&self, root: &mut Node, r: &'rl Record, iid0: usize, alignment_charlen: usize) {
+    fn make_year(&self, root: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
         let buf = [
             (r.date().year() / 1000) as u8 + b'0',
             (r.date().year() / 100 % 10) as u8 + b'0',
@@ -261,12 +272,12 @@ mod tests {
     )]
     fn test_into_tree(#[case] first_iid: usize, #[case] rl: Recordlist, #[case] want: &str) {
         let config = Config {
-            charset: &Charset::default(),
+            charset: Charset::default(),
             first_iid,
             leaf_string_postprocessor: None,
-            rl: &rl,
+            rl,
         };
-        let tr = Tree::from(config);
+        let tr = config.to_tree();
         assert_eq!(tr.to_string(), want);
     }
 }

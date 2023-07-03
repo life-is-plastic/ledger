@@ -1,3 +1,4 @@
+use crate::Output;
 use anyhow::Context;
 use clap::builder::TypedValueParser;
 
@@ -32,69 +33,59 @@ struct Opts {
 }
 
 impl Lim {
-    pub fn run<W>(
+    pub fn run(
         self,
-        mut stdout: W,
         rl: lib::Recordlist,
-        charset: &lib::Charset,
+        charset: lib::Charset,
         config: &lib::Config,
         fs: &lib::Fs,
-    ) -> anyhow::Result<()>
-    where
-        W: std::io::Write,
-    {
+    ) -> anyhow::Result<Output> {
         let year = self.year.0;
         let limits = fs
             .read::<lib::Limits>()
             .with_context(|| format!("failed to read '{}'", fs.path::<lib::Limits>().display()))?;
 
         if let Some(amount) = self.opts.set {
-            return update_limits(&mut stdout, limits, year, amount, fs);
+            return update_limits(limits, year, amount, fs);
         }
 
         let Some(kind) = self.opts.view.or(config.lim_account_type) else {
             anyhow::bail!("no default account type configured")
         };
-        let chart = lib::Limitprinter::from(lib::limitprinter::Config {
+        let printer_config = lib::limitprinter::Config {
             charset,
             today: lib::Date::from_ymd(year, 12, 31).expect("year should be within range"),
             kind,
-            limits: &limits,
-            rl: &rl,
-        });
-        write!(stdout, "{}", chart)?;
-        Ok(())
+            limits,
+            rl,
+        };
+        Ok(Output::Limitprinter(printer_config))
     }
 }
 
-fn update_limits<W>(
-    mut stdout: W,
+fn update_limits(
     mut limits: lib::Limits,
     year: u16,
     amount: lib::Cents,
     fs: &lib::Fs,
-) -> anyhow::Result<()>
-where
-    W: std::io::Write,
-{
-    let s: String;
+) -> anyhow::Result<Output> {
+    let output: String;
     let mut updated = true;
     if amount != lib::Cents(0) {
         limits.set(year, amount);
-        s = format!("{} limit set to {}", year, amount);
+        output = format!("{} limit set to {}\n", year, amount);
     } else if limits.remove(year).is_some() {
         limits.remove(year);
-        s = format!("{} limit removed.", year);
+        output = format!("{} limit removed.\n", year);
     } else {
         updated = false;
-        s = format!("{} has no limit.", year);
+        output = format!("{} has no limit.\n", year);
     };
     if updated {
         fs.write(&limits)
             .with_context(|| format!("failed to write '{}'", fs.path::<lib::Limits>().display()))?;
     }
-    writeln!(stdout, "{}", s)?;
-    Ok(())
+    Ok(Output::String(output))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -143,16 +134,18 @@ mod tests {
         "2016 limit set to (1.23)\n"
     )]
     fn test_update_limits(
-        mut env: Env,
+        env: Env,
         #[case] limits: lib::Limits,
         #[case] year: u16,
         #[case] amount: lib::Cents,
         #[case] want_limits: lib::Limits,
         #[case] want_output: &str,
     ) {
-        update_limits(&mut env.stdout, limits, year, amount, &env.fs).unwrap();
+        let output = update_limits(limits, year, amount, &env.fs)
+            .unwrap()
+            .to_string();
         assert_eq!(env.fs.read::<lib::Limits>().unwrap(), want_limits);
-        assert_eq!(std::str::from_utf8(&env.stdout).unwrap(), want_output);
+        assert_eq!(output, want_output);
     }
 
     #[rstest]

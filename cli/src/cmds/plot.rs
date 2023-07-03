@@ -1,7 +1,7 @@
-use clap::builder::TypedValueParser;
-
 use crate::sharedopts;
 use crate::util;
+use crate::Output;
+use clap::builder::TypedValueParser;
 
 /// Plot transaction totals
 #[derive(clap::Parser)]
@@ -29,35 +29,22 @@ pub struct Plot {
 }
 
 impl Plot {
-    pub fn run<W>(
-        self,
-        mut stdout: W,
-        rl: lib::Recordlist,
-        charset: &lib::Charset,
-    ) -> anyhow::Result<()>
-    where
-        W: std::io::Write,
-    {
+    pub fn run(self, rl: lib::Recordlist, charset: lib::Charset) -> anyhow::Result<Output> {
         let rl = util::filter_rl(
             &rl,
             self.interval,
             &self.categories_opts.categories,
             &self.categories_opts.not_categories,
         );
-        let chart = lib::Barchart::from(lib::barchart::Config {
+        let chart_config = lib::barchart::Config {
             charset,
             bounds: self.interval,
             unit: self.unit,
             term_width: terminal_size::terminal_size()
                 .map(|(w, _)| w.0)
                 .unwrap_or_default() as usize,
-            rl: &rl,
-        });
-        if chart.is_empty() {
-            util::write_no_transactions_msg(&mut stdout, self.interval)?;
-        } else {
-            write!(stdout, "{}", chart)?;
-        }
-        Ok(())
+            rl,
+        };
+        Ok(Output::Barchart(chart_config))
     }
 }

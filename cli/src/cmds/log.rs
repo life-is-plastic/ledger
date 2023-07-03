@@ -1,3 +1,4 @@
+use crate::Output;
 use anyhow::Context;
 
 /// Log a transaction
@@ -27,17 +28,13 @@ pub struct Log {
 }
 
 impl Log {
-    pub fn run<W>(
+    pub fn run(
         self,
-        mut stdout: W,
         mut rl: lib::Recordlist,
-        charset: &lib::Charset,
+        charset: lib::Charset,
         config: &lib::Config,
         fs: &lib::Fs,
-    ) -> anyhow::Result<()>
-    where
-        W: std::io::Write,
-    {
+    ) -> anyhow::Result<Output> {
         let r = lib::Record::new(
             self.date,
             self.category,
@@ -58,14 +55,13 @@ impl Log {
             })
             .iter()
             .collect::<lib::Recordlist>();
-        let tr = lib::Tree::from(lib::tree::forview::Config {
+        let tr_config = lib::tree::forview::Config {
             charset,
             first_iid: config.first_index_in_date,
             leaf_string_postprocessor: None,
-            rl: &rl,
-        });
-        write!(stdout, "{}", tr)?;
-        Ok(())
+            rl,
+        };
+        Ok(Output::TreeForView(tr_config))
     }
 }
 

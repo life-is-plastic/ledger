@@ -1,3 +1,4 @@
+use crate::Output;
 use anyhow::Context;
 
 /// Initialize reposistory in the current directory
@@ -9,10 +10,7 @@ pub struct Init {
 }
 
 impl Init {
-    pub fn run<W>(self, mut stdout: W, fs: &lib::Fs) -> anyhow::Result<()>
-    where
-        W: std::io::Write,
-    {
+    pub fn run(self, fs: &lib::Fs) -> anyhow::Result<Output> {
         let already_repo = fs.is_repo();
 
         let config = if self.reset_config {
@@ -25,18 +23,19 @@ impl Init {
         fs.write(&config)
             .with_context(|| format!("failed to write '{}'", fs.path::<lib::Config>().display()))?;
 
-        if !already_repo {
-            writeln!(stdout, "Repository initialized in '{}'", fs.dir().display())?;
+        Ok(if !already_repo {
+            Output::String(format!(
+                "Repository initialized in '{}'",
+                fs.dir().display()
+            ))
         } else if self.reset_config {
-            writeln!(stdout, "Repository configuration reset to defaults.")?;
+            Output::Str("Repository configuration reset to defaults.")
         } else {
-            writeln!(
-                stdout,
+            Output::String(format!(
                 "Repository reinitialized in '{}'",
                 fs.dir().display()
-            )?;
-        }
-        Ok(())
+            ))
+        })
     }
 }
 
@@ -51,9 +50,8 @@ mod tests {
     #[rstest]
     #[case(Init { reset_config: false })]
     #[case(Init { reset_config: true })]
-    fn test_new_repo(mut env: Env, #[case] init: Init) {
-        init.run(&mut env.stdout, &env.fs).unwrap();
-        let output = std::str::from_utf8(&env.stdout).unwrap();
+    fn test_new_repo(env: Env, #[case] init: Init) {
+        let output = init.run(&env.fs).unwrap().to_string();
         assert!(output.starts_with("Repository initialized in"));
         assert_eq!(
             std::fs::read_to_string(env.fs.path::<lib::Config>()).unwrap(),
@@ -79,16 +77,15 @@ mod tests {
         "Repository configuration reset to defaults.",
     )]
     fn test_existing_repo(
-        mut env: Env,
+        env: Env,
         #[case] init: Init,
         #[case] initial_config_contents: &str,
         #[case] final_config_contents: String,
-        #[case] want_stdout_starts_with: &str,
+        #[case] want_output_starts_with: &str,
     ) {
         std::fs::write(env.fs.path::<lib::Config>(), initial_config_contents).unwrap();
-        init.run(&mut env.stdout, &env.fs).unwrap();
-        let output = std::str::from_utf8(&env.stdout).unwrap();
-        assert!(output.starts_with(want_stdout_starts_with));
+        let output = init.run(&env.fs).unwrap().to_string();
+        assert!(output.starts_with(want_output_starts_with));
         assert_eq!(
             std::fs::read_to_string(env.fs.path::<lib::Config>()).unwrap(),
             final_config_contents,

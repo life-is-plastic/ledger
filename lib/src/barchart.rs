@@ -18,21 +18,33 @@ pub struct Barchart<'cs> {
     max_barlen: usize,
 }
 
-pub struct Config<'cs, 'rl> {
-    pub charset: &'cs Charset,
+pub struct Config {
+    pub charset: Charset,
     pub bounds: Interval,
     pub unit: Datepart,
     pub term_width: usize,
-    pub rl: &'rl Recordlist,
+    pub rl: Recordlist,
 }
 
-impl<'cs> From<Config<'cs, '_>> for Barchart<'cs> {
-    fn from(config: Config<'cs, '_>) -> Self {
-        let bounds = config.rl.spanned_interval().intersection(config.bounds);
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            charset: Default::default(),
+            bounds: Interval::EMPTY,
+            unit: Datepart::Year,
+            term_width: Default::default(),
+            rl: Default::default(),
+        }
+    }
+}
+
+impl Config {
+    pub fn to_barchart(&self) -> Barchart {
+        let bounds = self.rl.spanned_interval().intersection(self.bounds);
         let mut pos = Aggregate::<Date, Cents>::default();
         let mut neg = Aggregate::<Date, Cents>::default();
-        for interval in bounds.iter(config.unit) {
-            for r in config.rl.slice_spanning_interval(interval) {
+        for interval in bounds.iter(self.unit) {
+            for r in self.rl.slice_spanning_interval(interval) {
                 match r.amount().cmp(&Cents(0)) {
                     std::cmp::Ordering::Greater => pos.add(interval.start, r.amount()),
                     std::cmp::Ordering::Less => neg.add(interval.start, -r.amount()),
@@ -41,7 +53,7 @@ impl<'cs> From<Config<'cs, '_>> for Barchart<'cs> {
             }
         }
 
-        let label_charlen = match config.unit {
+        let label_charlen = match self.unit {
             Datepart::Year => 4,  // yyyy
             Datepart::Month => 8, // yyyy mmm
             Datepart::Day => 10,  // yyyy-mm-dd
@@ -50,16 +62,16 @@ impl<'cs> From<Config<'cs, '_>> for Barchart<'cs> {
             pos.iter().map(|(_, v)| v).max().unwrap_or_default(),
             neg.iter().map(|(_, v)| v).max().unwrap_or_default(),
         );
-        let max_barlen = config.term_width.max(util::MIN_TERM_WIDTH)
+        let max_barlen = self.term_width.max(util::MIN_TERM_WIDTH)
             - label_charlen // max 10
             - util::BOUNDING_SPACES_COUNT
             - 1 // vertical divider just before bar
             - (-max_val).charlen(); // max 27
 
-        Self {
-            charset: config.charset,
+        Barchart {
+            charset: &self.charset,
             bounds,
-            unit: config.unit,
+            unit: self.unit,
             pos,
             neg,
             label_charlen,
@@ -206,13 +218,13 @@ mod tests {
         #[case] want: &str,
     ) {
         let config = Config {
-            charset: &Charset::default(),
+            charset: Charset::default(),
             bounds,
             unit,
-            rl: &rl,
+            rl,
             term_width: 80,
         };
-        let chart = Barchart::from(config);
+        let chart = config.to_barchart();
         assert_eq!(chart.to_string(), want)
     }
 }

@@ -1,3 +1,4 @@
+use crate::Output;
 use anyhow::Context;
 
 /// Remove a transaction
@@ -15,17 +16,13 @@ pub struct Rm {
 }
 
 impl Rm {
-    pub fn run<W>(
+    pub fn run(
         self,
-        mut stdout: W,
         mut rl: lib::Recordlist,
-        charset: &lib::Charset,
+        charset: lib::Charset,
         config: &lib::Config,
         fs: &lib::Fs,
-    ) -> anyhow::Result<()>
-    where
-        W: std::io::Write,
-    {
+    ) -> anyhow::Result<Output> {
         let iid0 = self.index.wrapping_sub(config.first_index_in_date);
         if rl.get(self.date, iid0).is_none() {
             anyhow::bail!("nonexistent transaction");
@@ -38,25 +35,29 @@ impl Rm {
             })
             .iter()
             .collect::<lib::Recordlist>();
-        let tr = lib::Tree::from(lib::tree::forview::Config {
+        let lspp = move |config: &lib::tree::forview::Config,
+                         r: &lib::Record,
+                         iid0: usize,
+                         mut leaf_string: String|
+              -> String {
+            if r.date() == self.date && iid0 == iid0 {
+                if self.yes {
+                    leaf_string.insert_str(0, config.charset.color_prefix_red);
+                    leaf_string.push_str(" <- [REMOVED]");
+                } else {
+                    leaf_string.insert_str(0, config.charset.color_prefix_yellow);
+                    leaf_string.push_str(" <- [WOULD BE REMOVED]");
+                }
+                leaf_string.push_str(config.charset.color_suffix);
+            }
+            leaf_string
+        };
+        let tr_config = lib::tree::forview::Config {
             charset,
             first_iid: config.first_index_in_date,
-            rl: &rl_for_date,
-            leaf_string_postprocessor: Some(&|lspp| {
-                let mut s = lspp.leaf_string;
-                if lspp.r.date() == self.date && lspp.iid0 == iid0 {
-                    if self.yes {
-                        s.insert_str(0, charset.color_prefix_red);
-                        s.push_str(" <- [REMOVED]");
-                    } else {
-                        s.insert_str(0, charset.color_prefix_yellow);
-                        s.push_str(" <- [WOULD BE REMOVED]");
-                    }
-                    s.push_str(charset.color_suffix);
-                }
-                s
-            }),
-        });
+            rl: rl_for_date,
+            leaf_string_postprocessor: Some(Box::new(lspp)),
+        };
 
         if self.yes {
             rl.remove(self.date, iid0)
@@ -68,8 +69,8 @@ impl Rm {
                 )
             })?;
         }
-        write!(stdout, "{}", tr)?;
-        Ok(())
+
+        Ok(Output::TreeForView(tr_config))
     }
 }
 
@@ -104,14 +105,9 @@ mod tests {
             {"d":"2015-04-01","c":"category","a":111}
         "#,
     )]
-    fn test_bad_index(mut env: Env, #[case] rm: Rm, #[case] rl: lib::Recordlist) {
-        let res = rm.run(
-            &mut env.stdout,
-            rl,
-            &lib::Charset::default(),
-            &env.config,
-            &env.fs,
-        );
+    fn test_bad_index(env: Env, #[case] rm: Rm, #[case] rl: lib::Recordlist) {
+        let charset = lib::Charset::default();
+        let res = rm.run(rl, charset, &env.config, &env.fs);
         assert!(res.is_err());
     }
 
@@ -162,24 +158,18 @@ mod tests {
         "def: note <- [REMOVED]"
     )]
     fn test_specifying_yes(
-        mut env: Env,
+        env: Env,
         #[case] rm: Rm,
         #[case] rl: lib::Recordlist,
         #[case] want_rl: lib::Recordlist,
         #[case] want_in_output: &str,
     ) {
         env.fs.write(&rl).unwrap();
-        rm.run(
-            &mut env.stdout,
-            rl,
-            &lib::Charset::default(),
-            &env.config,
-            &env.fs,
-        )
-        .unwrap();
-        assert_eq!(env.fs.read::<lib::Recordlist>().unwrap(), want_rl);
-        assert!(std::str::from_utf8(&env.stdout)
+        let output = rm
+            .run(rl, lib::Charset::default(), &env.config, &env.fs)
             .unwrap()
-            .contains(want_in_output));
+            .to_string();
+        assert_eq!(env.fs.read::<lib::Recordlist>().unwrap(), want_rl);
+        assert!(output.contains(want_in_output));
     }
 }

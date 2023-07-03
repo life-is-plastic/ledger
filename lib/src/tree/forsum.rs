@@ -6,28 +6,22 @@ use crate::Charset;
 use crate::Recordlist;
 use crate::Tree;
 
-pub struct Config<'cs, 'rl> {
-    pub charset: &'cs Charset,
+#[derive(Default)]
+pub struct Config {
+    pub charset: Charset,
     pub level: usize,
-    pub rl: &'rl Recordlist,
+    pub rl: Recordlist,
 }
 
-impl<'cs, 'rl> Config<'cs, 'rl> {
+impl Config {
     const IN: &str = "In";
     const OUT: &str = "Out";
     const NET: &str = "Net";
     const TOTAL: &str = "Total";
 
-    pub(super) fn into_tree(self) -> Tree<'cs> {
-        if self.rl.is_empty() {
-            return Tree {
-                charset: self.charset,
-                root: Node::default(),
-            };
-        }
-
-        let mut pos = Aggregate::<&'rl str, Cents>::default();
-        let mut neg = Aggregate::<&'rl str, Cents>::default();
+    pub fn to_tree<'a>(&'a self) -> Tree<'a> {
+        let mut pos = Aggregate::<&str, Cents>::default();
+        let mut neg = Aggregate::<&str, Cents>::default();
         for r in self.rl.iter() {
             match r.amount().cmp(&Cents(0)) {
                 std::cmp::Ordering::Greater => pos.add(r.category().level(self.level), r.amount()),
@@ -36,7 +30,7 @@ impl<'cs, 'rl> Config<'cs, 'rl> {
             }
         }
 
-        let sort_agg = |agg: &Aggregate<&'rl str, Cents>| {
+        let sort_agg = |agg: &Aggregate<&'a str, Cents>| {
             let mut v = agg.iter().collect::<Vec<_>>();
             v.sort_unstable_by(|&(s1, a1), &(s2, a2)| {
                 if a1 == a2 {
@@ -75,7 +69,7 @@ impl<'cs, 'rl> Config<'cs, 'rl> {
         self.add_vec(&mut root, negv, Self::OUT, alignment_charlen);
         self.add_vec(&mut root, totv, Self::NET, alignment_charlen);
         Tree {
-            charset: self.charset,
+            charset: &self.charset,
             root,
         }
     }
@@ -126,7 +120,16 @@ mod tests {
     use super::*;
 
     #[rstest]
-    #[case(0, "", "")]
+    #[case(
+        0,
+        "",
+        indoc!("
+            Net
+            |-- In ----- 0.00
+            |-- Out ---- 0.00
+            `-- Total -- 0.00
+        "),
+    )]
     #[case(
         0,
         r#"
@@ -209,11 +212,11 @@ mod tests {
     )]
     fn test_into_tree(#[case] level: usize, #[case] rl: Recordlist, #[case] want: &str) {
         let config = Config {
-            charset: &Charset::default(),
+            charset: Charset::default(),
             level,
-            rl: &rl,
+            rl,
         };
-        let tr = config.into_tree();
+        let tr = config.to_tree();
         assert_eq!(tr.to_string(), want)
     }
 }

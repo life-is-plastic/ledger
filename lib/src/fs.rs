@@ -8,16 +8,16 @@ pub struct Fs {
 }
 
 /// Marker for types that are serialized to or deserialized from files.
-pub trait Serde: Default + ToString + std::str::FromStr {
+pub trait FsSerde: Default + ToString + std::str::FromStr {
     const FILENAME: &'static str;
 }
-impl Serde for Config {
+impl FsSerde for Config {
     const FILENAME: &'static str = ".ledger.json";
 }
-impl Serde for Recordlist {
+impl FsSerde for Recordlist {
     const FILENAME: &'static str = "ledger.jsonl";
 }
-impl Serde for Limits {
+impl FsSerde for Limits {
     const FILENAME: &'static str = "limits.json";
 }
 
@@ -41,15 +41,16 @@ impl Fs {
     /// Returns the path which `T` will be serialized to and deserialized from.
     pub fn path<T>(&self) -> std::path::PathBuf
     where
-        T: Serde,
+        T: FsSerde,
     {
         self.dir.join(T::FILENAME)
     }
 
-    /// Deserializes `T` from disk. If `T`'s file does not exist, returns `T::default()`.
+    /// Deserializes `T` from disk. Returns `T::default()` if `T`'s file does
+    /// not exist.
     pub fn read<T>(&self) -> Result<T, ReadError>
     where
-        T: Serde,
+        T: FsSerde,
         <T as std::str::FromStr>::Err: std::error::Error + Send + Sync + 'static,
     {
         match std::fs::read_to_string(self.path::<T>()) {
@@ -66,7 +67,7 @@ impl Fs {
 
     pub fn write<T>(&self, obj: &T) -> std::io::Result<()>
     where
-        T: Serde,
+        T: FsSerde,
     {
         std::fs::write(self.path::<T>(), obj.to_string())
     }

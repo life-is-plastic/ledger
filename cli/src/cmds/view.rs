@@ -1,5 +1,6 @@
 use crate::sharedopts;
 use crate::util;
+use crate::Output;
 
 /// View transactions
 #[derive(clap::Parser)]
@@ -16,33 +17,24 @@ pub struct View {
 }
 
 impl View {
-    pub fn run<W>(
+    pub fn run(
         self,
-        mut stdout: W,
         rl: lib::Recordlist,
-        charset: &lib::Charset,
+        charset: lib::Charset,
         config: &lib::Config,
-    ) -> anyhow::Result<()>
-    where
-        W: std::io::Write,
-    {
+    ) -> anyhow::Result<Output> {
         let rl = util::filter_rl(
             &rl,
             self.interval,
             &self.categories_opts.categories,
             &self.categories_opts.not_categories,
         );
-        let tr = lib::Tree::from(lib::tree::forview::Config {
+        let tr_config = lib::tree::forview::Config {
             charset,
             first_iid: config.first_index_in_date,
-            rl: &rl,
+            rl,
             leaf_string_postprocessor: None,
-        });
-        if tr.is_empty() {
-            util::write_no_transactions_msg(&mut stdout, self.interval)?;
-        } else {
-            write!(stdout, "{}", tr)?;
-        }
-        Ok(())
+        };
+        Ok(Output::TreeForView(tr_config))
     }
 }

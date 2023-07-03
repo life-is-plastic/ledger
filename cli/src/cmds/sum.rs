@@ -1,5 +1,6 @@
 use crate::sharedopts;
 use crate::util;
+use crate::Output;
 
 /// View transaction totals
 #[derive(clap::Parser)]
@@ -27,31 +28,18 @@ pub struct Sum {
 }
 
 impl Sum {
-    pub fn run<W>(
-        self,
-        mut stdout: W,
-        rl: lib::Recordlist,
-        charset: &lib::Charset,
-    ) -> anyhow::Result<()>
-    where
-        W: std::io::Write,
-    {
+    pub fn run(self, rl: lib::Recordlist, charset: lib::Charset) -> anyhow::Result<Output> {
         let rl = util::filter_rl(
             &rl,
             self.interval,
             &self.categories_opts.categories,
             &self.categories_opts.not_categories,
         );
-        let tr = lib::Tree::from(lib::tree::forsum::Config {
+        let tr_config = lib::tree::forsum::Config {
             charset,
             level: self.level,
-            rl: &rl,
-        });
-        if tr.is_empty() {
-            util::write_no_transactions_msg(&mut stdout, self.interval)?;
-        } else {
-            write!(stdout, "{}", tr)?;
-        }
-        Ok(())
+            rl,
+        };
+        Ok(Output::TreeForSum(tr_config))
     }
 }
