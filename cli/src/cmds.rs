@@ -42,16 +42,6 @@ impl Root {
         let config = fs
             .read::<lib::Config>()
             .with_context(|| format!("failed to read '{}'", fs.path::<lib::Config>().display()))?;
-        let charset = {
-            let mut charset = lib::Charset::default();
-            if config.use_unicode_symbols {
-                charset = charset.with_unicode()
-            }
-            if config.use_colored_output {
-                charset = charset.with_color()
-            }
-            charset
-        };
         let rl = fs.read::<lib::Recordlist>().with_context(|| {
             format!(
                 "failed to read '{}'",
@@ -61,13 +51,13 @@ impl Root {
 
         match self.command {
             Commands::Init(_) => unreachable!(),
-            Commands::Log(cmd) => cmd.run(rl, charset, &config, fs),
-            Commands::Rm(cmd) => cmd.run(rl, charset, &config, fs),
-            Commands::View(cmd) => cmd.run(rl, charset, &config),
+            Commands::Log(cmd) => cmd.run(rl, &config, fs),
+            Commands::Rm(cmd) => cmd.run(rl, &config, fs),
+            Commands::View(cmd) => cmd.run(rl, &config),
             Commands::Cats(cmd) => cmd.run(rl),
-            Commands::Sum(cmd) => cmd.run(rl, charset),
-            Commands::Plot(cmd) => cmd.run(rl, charset),
-            Commands::Lim(cmd) => cmd.run(rl, charset, &config, fs),
+            Commands::Sum(cmd) => cmd.run(rl, &config),
+            Commands::Plot(cmd) => cmd.run(rl, &config),
+            Commands::Lim(cmd) => cmd.run(rl, &config, fs),
         }
     }
 }

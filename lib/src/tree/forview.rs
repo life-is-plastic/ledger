@@ -13,6 +13,7 @@ pub struct Config {
     /// Additional transformations to apply to a record's as-a-node string
     /// representation (records are leaf nodes). If not `None`, this is called
     /// once for each record in `rl`.
+    #[allow(clippy::type_complexity)]
     pub leaf_string_postprocessor: Option<
         Box<
             dyn Fn(
@@ -42,7 +43,7 @@ pub struct LsppArgs<'a> {
 }
 
 impl Config {
-    pub fn to_tree<'a>(&'a self) -> Tree<'a> {
+    pub fn to_tree(&self) -> Tree {
         let alignment_charlen = self.get_alignment_charlen();
         let mut root = Node::default();
         for (iid0, r) in self.rl.iter_with_iid() {

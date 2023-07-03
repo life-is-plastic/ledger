@@ -17,12 +17,7 @@ pub struct View {
 }
 
 impl View {
-    pub fn run(
-        self,
-        rl: lib::Recordlist,
-        charset: lib::Charset,
-        config: &lib::Config,
-    ) -> anyhow::Result<Output> {
+    pub fn run(self, rl: lib::Recordlist, config: &lib::Config) -> anyhow::Result<Output> {
         let rl = util::filter_rl(
             &rl,
             self.interval,
@@ -30,7 +25,7 @@ impl View {
             &self.categories_opts.not_categories,
         );
         let tr_config = lib::tree::forview::Config {
-            charset,
+            charset: util::charset_from_config(config),
             first_iid: config.first_index_in_date,
             rl,
             leaf_string_postprocessor: None,

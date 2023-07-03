@@ -1,3 +1,4 @@
+#[derive(Debug, PartialEq, Eq)]
 pub struct Charset {
     pub dash: char,
     pub tree_sideways_t: &'static str,
@@ -14,6 +15,7 @@ pub struct Charset {
 }
 
 impl Default for Charset {
+    /// Only ASCII characters. No color.
     fn default() -> Self {
         Self {
             dash: '-',

@@ -28,7 +28,7 @@ pub struct Sum {
 }
 
 impl Sum {
-    pub fn run(self, rl: lib::Recordlist, charset: lib::Charset) -> anyhow::Result<Output> {
+    pub fn run(self, rl: lib::Recordlist, config: &lib::Config) -> anyhow::Result<Output> {
         let rl = util::filter_rl(
             &rl,
             self.interval,
@@ -36,7 +36,7 @@ impl Sum {
             &self.categories_opts.not_categories,
         );
         let tr_config = lib::tree::forsum::Config {
-            charset,
+            charset: util::charset_from_config(config),
             level: self.level,
             rl,
         };

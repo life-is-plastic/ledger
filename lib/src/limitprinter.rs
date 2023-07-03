@@ -36,7 +36,7 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn to_limitprinter<'a>(&'a self) -> Limitprinter<'a> {
+    pub fn to_limitprinter(&self) -> Limitprinter {
         let limits = self
             .limits
             .iter()

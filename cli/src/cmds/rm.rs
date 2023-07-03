@@ -1,3 +1,4 @@
+use crate::util;
 use crate::Output;
 use anyhow::Context;
 
@@ -19,7 +20,6 @@ impl Rm {
     pub fn run(
         self,
         mut rl: lib::Recordlist,
-        charset: lib::Charset,
         config: &lib::Config,
         fs: &lib::Fs,
     ) -> anyhow::Result<Output> {
@@ -37,10 +37,10 @@ impl Rm {
             .collect::<lib::Recordlist>();
         let lspp = move |config: &lib::tree::forview::Config,
                          r: &lib::Record,
-                         iid0: usize,
+                         iid0_arg: usize,
                          mut leaf_string: String|
               -> String {
-            if r.date() == self.date && iid0 == iid0 {
+            if r.date() == self.date && iid0_arg == iid0 {
                 if self.yes {
                     leaf_string.insert_str(0, config.charset.color_prefix_red);
                     leaf_string.push_str(" <- [REMOVED]");
@@ -53,7 +53,7 @@ impl Rm {
             leaf_string
         };
         let tr_config = lib::tree::forview::Config {
-            charset,
+            charset: util::charset_from_config(config),
             first_iid: config.first_index_in_date,
             rl: rl_for_date,
             leaf_string_postprocessor: Some(Box::new(lspp)),
@@ -106,8 +106,7 @@ mod tests {
         "#,
     )]
     fn test_bad_index(env: Env, #[case] rm: Rm, #[case] rl: lib::Recordlist) {
-        let charset = lib::Charset::default();
-        let res = rm.run(rl, charset, &env.config, &env.fs);
+        let res = rm.run(rl, &env.config, &env.fs);
         assert!(res.is_err());
     }
 
@@ -165,10 +164,7 @@ mod tests {
         #[case] want_in_output: &str,
     ) {
         env.fs.write(&rl).unwrap();
-        let output = rm
-            .run(rl, lib::Charset::default(), &env.config, &env.fs)
-            .unwrap()
-            .to_string();
+        let output = rm.run(rl, &env.config, &env.fs).unwrap().to_string();
         assert_eq!(env.fs.read::<lib::Recordlist>().unwrap(), want_rl);
         assert!(output.contains(want_in_output));
     }

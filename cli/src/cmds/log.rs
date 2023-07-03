@@ -1,3 +1,4 @@
+use crate::util;
 use crate::Output;
 use anyhow::Context;
 
@@ -31,7 +32,6 @@ impl Log {
     pub fn run(
         self,
         mut rl: lib::Recordlist,
-        charset: lib::Charset,
         config: &lib::Config,
         fs: &lib::Fs,
     ) -> anyhow::Result<Output> {
@@ -56,7 +56,7 @@ impl Log {
             .iter()
             .collect::<lib::Recordlist>();
         let tr_config = lib::tree::forview::Config {
-            charset,
+            charset: util::charset_from_config(config),
             first_iid: config.first_index_in_date,
             leaf_string_postprocessor: None,
             rl,

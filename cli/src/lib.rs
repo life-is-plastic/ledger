@@ -5,3 +5,6 @@ mod util;
 
 pub use cmds::main;
 use output::Output;
+
+#[cfg(test)]
+mod tests;

@@ -1,3 +1,14 @@
+pub fn charset_from_config(config: &lib::Config) -> lib::Charset {
+    let mut charset = lib::Charset::default();
+    if config.use_unicode_symbols {
+        charset = charset.with_unicode()
+    }
+    if config.use_colored_output {
+        charset = charset.with_color()
+    }
+    charset
+}
+
 /// Returns a new record list such that each record:
 /// - Is in 'interval'
 /// - Matches any wildcard pattern in 'categories'
@@ -135,6 +146,44 @@ mod tests {
         "#
         .parse()
         .unwrap()
+    }
+
+    #[rstest]
+    #[case(
+        lib::Config {
+            use_colored_output: false,
+            use_unicode_symbols: false,
+            ..lib::Config::default()
+        },
+        lib::Charset::default(),
+    )]
+    #[case(
+        lib::Config {
+            use_colored_output: true,
+            use_unicode_symbols: false,
+            ..lib::Config::default()
+        },
+        lib::Charset::default().with_color(),
+    )]
+    #[case(
+        lib::Config {
+            use_colored_output: false,
+            use_unicode_symbols: true,
+            ..lib::Config::default()
+        },
+        lib::Charset::default().with_unicode(),
+    )]
+    #[case(
+        lib::Config {
+            use_colored_output: true,
+            use_unicode_symbols: true,
+            ..lib::Config::default()
+        },
+        lib::Charset::default().with_color().with_unicode(),
+    )]
+    fn test_charset_from_config(#[case] config: lib::Config, #[case] want: lib::Charset) {
+        let got = charset_from_config(&config);
+        assert_eq!(got, want);
     }
 
     #[rstest]

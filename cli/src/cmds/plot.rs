@@ -29,7 +29,7 @@ pub struct Plot {
 }
 
 impl Plot {
-    pub fn run(self, rl: lib::Recordlist, charset: lib::Charset) -> anyhow::Result<Output> {
+    pub fn run(self, rl: lib::Recordlist, config: &lib::Config) -> anyhow::Result<Output> {
         let rl = util::filter_rl(
             &rl,
             self.interval,
@@ -37,7 +37,7 @@ impl Plot {
             &self.categories_opts.not_categories,
         );
         let chart_config = lib::barchart::Config {
-            charset,
+            charset: util::charset_from_config(config),
             bounds: self.interval,
             unit: self.unit,
             term_width: terminal_size::terminal_size()

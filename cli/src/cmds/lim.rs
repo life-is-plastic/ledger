@@ -1,3 +1,4 @@
+use crate::util;
 use crate::Output;
 use anyhow::Context;
 use clap::builder::TypedValueParser;
@@ -36,7 +37,6 @@ impl Lim {
     pub fn run(
         self,
         rl: lib::Recordlist,
-        charset: lib::Charset,
         config: &lib::Config,
         fs: &lib::Fs,
     ) -> anyhow::Result<Output> {
@@ -53,7 +53,7 @@ impl Lim {
             anyhow::bail!("no default account type configured")
         };
         let printer_config = lib::limitprinter::Config {
-            charset,
+            charset: util::charset_from_config(config),
             today: lib::Date::from_ymd(year, 12, 31).expect("year should be within range"),
             kind,
             limits,
@@ -108,7 +108,7 @@ impl std::str::FromStr for YearArg {
                 .checked_add(offset)
                 .unwrap_or(-1)
         };
-        if year < 0 || year > 9999 {
+        if !(0..=9999).contains(&year) {
             anyhow::bail!("year is out of range")
         }
         Ok(Self(year as u16))
