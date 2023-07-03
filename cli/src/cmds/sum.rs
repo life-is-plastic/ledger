@@ -8,7 +8,7 @@ pub struct Sum {
     #[arg(
         default_value = "m",
         help = sharedopts::INTERVAL_HELP,
-        long_help = sharedopts::INTERVAL_LONG_HELP,
+        long_help = sharedopts::INTERVAL_HELP_LONG,
     )]
     interval: lib::Interval,
 

@@ -1,5 +1,5 @@
 pub const INTERVAL_HELP: &str = "Interval of interest";
-pub const INTERVAL_LONG_HELP: &str = "Interval of interest
+pub const INTERVAL_HELP_LONG: &str = "Interval of interest
 
 Must be in the format 'A:B'. Each of 'A' or 'B' is either an ISO 8601 date (yyyy-mm-dd) or a relative date (see below). 'A' and 'B' are both optional, defaulting to 0000-01-01 and 9999-12-31 respectively.
 

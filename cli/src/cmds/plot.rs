@@ -9,7 +9,7 @@ pub struct Plot {
     #[arg(
         default_value = "m-12:M",
         help = sharedopts::INTERVAL_HELP,
-        long_help = sharedopts::INTERVAL_LONG_HELP,
+        long_help = sharedopts::INTERVAL_HELP_LONG,
     )]
     interval: lib::Interval,
 
