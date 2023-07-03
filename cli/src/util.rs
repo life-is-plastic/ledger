@@ -61,7 +61,7 @@ pub mod testing {
         let fs = lib::Fs::new(_td.path());
         let config = lib::Config {
             first_index_in_date: 0,
-            lim_account_type: String::new(),
+            lim_account_type: None,
             unsigned_is_positive: true,
             use_colored_output: false,
             use_unicode_symbols: false,

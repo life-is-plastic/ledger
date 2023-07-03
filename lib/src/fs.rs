@@ -127,7 +127,7 @@ mod tests {
                 r#"
                 {
                   "firstIndexInDate": 1,
-                  "limAccountType": "",
+                  "limAccountType": null,
                   "unsignedIsPositive": false,
                   "useColoredOutput": true,
                   "useUnicodeSymbols": true

@@ -1,9 +1,11 @@
+use crate::Limitkind;
+
 /// Application config.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Config {
     pub first_index_in_date: usize,
-    pub lim_account_type: String,
+    pub lim_account_type: Option<Limitkind>,
     pub unsigned_is_positive: bool,
     pub use_colored_output: bool,
     pub use_unicode_symbols: bool,
@@ -13,7 +15,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             first_index_in_date: 1,
-            lim_account_type: String::new(),
+            lim_account_type: None,
             unsigned_is_positive: true,
             use_colored_output: true,
             use_unicode_symbols: true,

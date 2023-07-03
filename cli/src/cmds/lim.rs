@@ -23,7 +23,7 @@ struct Opts {
     set: Option<lib::Cents>,
 
     /// View total and remaining limits for YEAR
-    #[arg(short, long, value_name = "ACCOUNT_TYPE")]
+    #[arg(long, value_name = "ACCOUNT_TYPE")]
     #[arg(value_parser(
         clap::builder::PossibleValuesParser::new(<lib::Limitkind as strum::VariantNames>::VARIANTS)
             .map(|s| s.parse::<lib::Limitkind>().expect("should be parseable"))
@@ -52,7 +52,9 @@ impl Lim {
             return update_limits(&mut stdout, limits, year, amount, fs);
         }
 
-        let kind = get_limitkind(self.opts.view, &config.lim_account_type)?;
+        let Some(kind) = self.opts.view.or(config.lim_account_type) else {
+            anyhow::bail!("no default account type configured")
+        };
         let chart = lib::Limitprinter::from(lib::limitprinter::Config {
             charset,
             today: lib::Date::from_ymd(year, 12, 31).expect("year should be within range"),
@@ -93,18 +95,6 @@ where
     }
     writeln!(stdout, "{}", s)?;
     Ok(())
-}
-
-fn get_limitkind(arg: Option<lib::Limitkind>, default: &str) -> anyhow::Result<lib::Limitkind> {
-    if let Some(kind) = arg {
-        return Ok(kind);
-    }
-    if default.is_empty() {
-        anyhow::bail!("no default account type configured")
-    }
-    default
-        .parse::<lib::Limitkind>()
-        .map_err(|_| anyhow::format_err!("invalid default account type '{}'", default))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -163,27 +153,6 @@ mod tests {
         update_limits(&mut env.stdout, limits, year, amount, &env.fs).unwrap();
         assert_eq!(env.fs.read::<lib::Limits>().unwrap(), want_limits);
         assert_eq!(std::str::from_utf8(&env.stdout).unwrap(), want_output);
-    }
-
-    #[rstest]
-    #[case(Some(lib::Limitkind::Rrsp), "", lib::Limitkind::Rrsp)]
-    #[case(Some(lib::Limitkind::Tfsa), "", lib::Limitkind::Tfsa)]
-    #[case(Some(lib::Limitkind::Tfsa), "asdf", lib::Limitkind::Tfsa)]
-    #[case(None, "rrsp", lib::Limitkind::Rrsp)]
-    #[case(None, "tfsa", lib::Limitkind::Tfsa)]
-    fn test_get_limitkind(
-        #[case] arg: Option<lib::Limitkind>,
-        #[case] default: &str,
-        #[case] want: lib::Limitkind,
-    ) {
-        assert_eq!(get_limitkind(arg, default).unwrap(), want)
-    }
-
-    #[rstest]
-    #[case(None, "")]
-    #[case(None, "asdf")]
-    fn test_get_limitkind_failing(#[case] arg: Option<lib::Limitkind>, #[case] default: &str) {
-        assert!(get_limitkind(arg, default).is_err())
     }
 
     #[rstest]

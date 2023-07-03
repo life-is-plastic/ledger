@@ -9,12 +9,15 @@ use crate::Recordlist;
     Copy,
     PartialEq,
     Eq,
+    serde::Serialize,
+    serde::Deserialize,
     strum::EnumString,
     strum::Display,
     strum::AsRefStr,
     strum::IntoStaticStr,
     strum::EnumVariantNames,
 )]
+#[serde(rename_all = "lowercase")]
 #[strum(ascii_case_insensitive, serialize_all = "lowercase")]
 pub enum Limitkind {
     Rrsp,
