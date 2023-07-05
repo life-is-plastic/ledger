@@ -7,17 +7,17 @@ pub struct Fs {
     dir: std::path::PathBuf,
 }
 
-/// Marker for types that are serialized to or deserialized from files.
-pub trait FsSerde: Default + ToString + std::str::FromStr {
+/// Marker for types that are serialized to or deserialized from the filesystem.
+pub trait Io: Default + ToString + std::str::FromStr {
     const FILENAME: &'static str;
 }
-impl FsSerde for Config {
+impl Io for Config {
     const FILENAME: &'static str = ".ledger.json";
 }
-impl FsSerde for Recordlist {
+impl Io for Recordlist {
     const FILENAME: &'static str = "ledger.jsonl";
 }
-impl FsSerde for Limits {
+impl Io for Limits {
     const FILENAME: &'static str = "limits.json";
 }
 
@@ -35,13 +35,13 @@ impl Fs {
     }
 
     pub fn is_repo(&self) -> bool {
-        self.path::<Config>().is_file()
+        self.path::<Config>().exists()
     }
 
     /// Returns the path which `T` will be serialized to and deserialized from.
     pub fn path<T>(&self) -> std::path::PathBuf
     where
-        T: FsSerde,
+        T: Io,
     {
         self.dir.join(T::FILENAME)
     }
@@ -50,7 +50,7 @@ impl Fs {
     /// not exist.
     pub fn read<T>(&self) -> Result<T, ReadError>
     where
-        T: FsSerde,
+        T: Io,
         <T as std::str::FromStr>::Err: std::error::Error + Send + Sync + 'static,
     {
         match std::fs::read_to_string(self.path::<T>()) {
@@ -67,7 +67,7 @@ impl Fs {
 
     pub fn write<T>(&self, obj: &T) -> std::io::Result<()>
     where
-        T: FsSerde,
+        T: Io,
     {
         std::fs::write(self.path::<T>(), obj.to_string())
     }
@@ -84,9 +84,8 @@ pub enum ReadError {
 
 #[cfg(test)]
 mod tests {
-    use indoc::indoc;
-
     use super::*;
+    use indoc::indoc;
 
     /// Returns a filesystem object anchored at a temporary directory. The `Fs`
     /// must not outlive the returned `TempDir`.
@@ -97,7 +96,7 @@ mod tests {
     }
 
     #[test]
-    fn test_path() {
+    fn path() {
         let (fs, _td) = tempfs();
 
         let a = fs.path::<Config>();
@@ -109,29 +108,32 @@ mod tests {
     }
 
     #[test]
-    fn test_config() {
+    fn config() {
         let (fs, _td) = tempfs();
 
+        // Read nonexistent config.
         assert_eq!(fs.is_repo(), false);
         assert_eq!(fs.read::<Config>().unwrap(), Config::default());
 
-        let s = r#"{"unsignedIsPositive": false}"#;
+        // Read config.
+        let s = r#"{"unsignedIsNegative": true}"#;
         let config = s.parse::<Config>().unwrap();
         std::fs::write(fs.path::<Config>(), s).unwrap();
         assert_eq!(fs.is_repo(), true);
         assert_eq!(fs.read::<Config>().unwrap(), config);
 
+        // Write config.
         fs.write(&config).unwrap();
         assert_eq!(
             std::fs::read_to_string(fs.path::<Config>()).unwrap(),
             indoc!(
                 r#"
                 {
-                  "firstIndexInDate": 1,
+                  "firstIndexInDate": 0,
                   "limAccountType": null,
-                  "unsignedIsPositive": false,
-                  "useColoredOutput": true,
-                  "useUnicodeSymbols": true
+                  "unsignedIsNegative": true,
+                  "useColoredOutput": false,
+                  "useUnicodeSymbols": false
                 }
                 "#
             )

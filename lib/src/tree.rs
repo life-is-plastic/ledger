@@ -8,6 +8,7 @@ pub struct Tree<'a> {
     root: Node,
 }
 
+#[derive(Default)]
 struct Node {
     data: std::borrow::Cow<'static, str>,
     children: Vec<Self>,
@@ -18,16 +19,6 @@ impl Node {
         Self {
             data,
             children: Vec::new(),
-        }
-    }
-}
-
-impl Default for Node {
-    /// Returns a node suitable for acting as the root node.
-    fn default() -> Self {
-        Self {
-            data: "".into(),
-            children: Default::default(),
         }
     }
 }
@@ -81,9 +72,8 @@ impl std::fmt::Display for Tree<'_> {
 
 #[cfg(test)]
 mod tests {
-    use indoc::indoc;
-
     use super::*;
+    use indoc::indoc;
 
     #[test]
     fn test_to_string() {

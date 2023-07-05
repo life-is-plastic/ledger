@@ -19,9 +19,53 @@ impl Cats {
         cats.sort();
         cats.dedup();
         Ok(if cats.is_empty() {
-            Output::Str("No categories.")
+            Output::Str("No categories.".to_string())
         } else {
-            Output::String(cats.join("\n"))
+            Output::Str(cats.join("\n"))
         })
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::testing;
+
+    testing::generate_testcases![
+        (
+            no_cats1,
+            testing::Case {
+                args: &["", "cats"],
+                matcher: testing::ResultMatcher::OkStrGlob("no categories."),
+                initial_state: testing::StrState::new().with_config("{}"),
+            }
+        ),
+        (
+            no_cats2,
+            testing::Case {
+                args: &["", "cats", "ddd"],
+                matcher: testing::ResultMatcher::OkStrGlob("no categories."),
+                initial_state: testing::StrState::new().with_config("{}").with_rl(
+                    r#"
+                        {"d":"2014-01-01","c":"ccc","a":100}
+                        {"d":"2015-01-01","c":"bbb","a":100}
+                        {"d":"2016-01-01","c":"aaa","a":100}
+                    "#
+                ),
+            }
+        ),
+        (
+            normal_execution,
+            testing::Case {
+                args: &["", "cats", "bbb", "aaa"],
+                matcher: testing::ResultMatcher::OkStrGlob("aaa\nbbb"),
+                initial_state: testing::StrState::new().with_config("{}").with_rl(
+                    r#"
+                        {"d":"2014-01-01","c":"ccc","a":100}
+                        {"d":"2015-01-01","c":"bbb","a":100}
+                        {"d":"2016-01-01","c":"aaa","a":100}
+                    "#
+                ),
+            }
+        ),
+    ];
 }

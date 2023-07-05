@@ -105,11 +105,18 @@ impl std::str::FromStr for Cents {
     }
 }
 
+impl TryFrom<&str> for Cents {
+    type Error = <Self as std::str::FromStr>::Err;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.parse::<Self>()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
-
     use super::*;
+    use rstest::rstest;
 
     #[rstest]
     #[case(Cents(0), "0.00")]

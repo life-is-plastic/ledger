@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Charset {
     pub dash: char,
     pub tree_sideways_t: &'static str,

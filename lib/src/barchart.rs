@@ -18,24 +18,13 @@ pub struct Barchart<'cs> {
     max_barlen: usize,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Config {
     pub charset: Charset,
     pub bounds: Interval,
     pub unit: Datepart,
     pub term_width: usize,
     pub rl: Recordlist,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            charset: Default::default(),
-            bounds: Interval::EMPTY,
-            unit: Datepart::Year,
-            term_width: Default::default(),
-            rl: Default::default(),
-        }
-    }
 }
 
 impl Config {
@@ -153,14 +142,13 @@ impl std::fmt::Display for Barchart<'_> {
 
 #[cfg(test)]
 mod tests {
-    use indoc::indoc;
-    use rstest::fixture;
-    use rstest::rstest;
-
     use super::*;
     use crate::Charset;
     use crate::Datepart;
     use crate::Interval;
+    use indoc::indoc;
+    use rstest::fixture;
+    use rstest::rstest;
 
     #[fixture]
     fn rl() -> Recordlist {

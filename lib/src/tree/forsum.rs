@@ -6,7 +6,7 @@ use crate::Charset;
 use crate::Recordlist;
 use crate::Tree;
 
-#[derive(Default)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Config {
     pub charset: Charset,
     pub level: usize,
@@ -114,10 +114,9 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use indoc::indoc;
     use rstest::rstest;
-
-    use super::*;
 
     #[rstest]
     #[case(

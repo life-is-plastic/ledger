@@ -3,7 +3,7 @@ use crate::Output;
 use anyhow::Context;
 use clap::builder::TypedValueParser;
 
-/// View and manage contribution limits
+/// Manage and view contribution limits
 #[derive(clap::Parser)]
 pub struct Lim {
     /// Year of interest
@@ -33,62 +33,7 @@ struct Opts {
     view: Option<lib::Limitkind>,
 }
 
-impl Lim {
-    pub fn run(
-        self,
-        rl: lib::Recordlist,
-        config: &lib::Config,
-        fs: &lib::Fs,
-    ) -> anyhow::Result<Output> {
-        let year = self.year.0;
-        let limits = fs
-            .read::<lib::Limits>()
-            .with_context(|| format!("failed to read '{}'", fs.path::<lib::Limits>().display()))?;
-
-        if let Some(amount) = self.opts.set {
-            return update_limits(limits, year, amount, fs);
-        }
-
-        let Some(kind) = self.opts.view.or(config.lim_account_type) else {
-            anyhow::bail!("no default account type configured")
-        };
-        let printer_config = lib::limitprinter::Config {
-            charset: util::charset_from_config(config),
-            today: lib::Date::from_ymd(year, 12, 31).expect("year should be within range"),
-            kind,
-            limits,
-            rl,
-        };
-        Ok(Output::Limitprinter(printer_config))
-    }
-}
-
-fn update_limits(
-    mut limits: lib::Limits,
-    year: u16,
-    amount: lib::Cents,
-    fs: &lib::Fs,
-) -> anyhow::Result<Output> {
-    let output: String;
-    let mut updated = true;
-    if amount != lib::Cents(0) {
-        limits.set(year, amount);
-        output = format!("{} limit set to {}\n", year, amount);
-    } else if limits.remove(year).is_some() {
-        limits.remove(year);
-        output = format!("{} limit removed.\n", year);
-    } else {
-        updated = false;
-        output = format!("{} has no limit.\n", year);
-    };
-    if updated {
-        fs.write(&limits)
-            .with_context(|| format!("failed to write '{}'", fs.path::<lib::Limits>().display()))?;
-    }
-    Ok(Output::String(output))
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct YearArg(u16);
 
 impl std::str::FromStr for YearArg {
@@ -115,38 +60,66 @@ impl std::str::FromStr for YearArg {
     }
 }
 
+impl Lim {
+    pub fn run(
+        self,
+        rl: lib::Recordlist,
+        config: &lib::Config,
+        fs: &lib::Fs,
+    ) -> anyhow::Result<Output> {
+        let year = self.year.0;
+        let limits = fs
+            .read::<lib::Limits>()
+            .with_context(|| format!("failed to read '{}'", fs.path::<lib::Limits>().display()))?;
+
+        if let Some(amount) = self.opts.set {
+            return update_limits(limits, year, amount, fs);
+        }
+
+        let Some(kind) = self.opts.view.or(config.lim_account_type) else {
+            anyhow::bail!("no default account type configured")
+        };
+        let printer_config = lib::limitprinter::Config {
+            charset: util::charset_from_config(config),
+            year,
+            kind,
+            limits,
+            rl,
+        };
+        Ok(Output::Limitprinter(printer_config))
+    }
+}
+
+fn update_limits(
+    mut limits: lib::Limits,
+    year: u16,
+    amount: lib::Cents,
+    fs: &lib::Fs,
+) -> anyhow::Result<Output> {
+    let output: String;
+    let mut updated = true;
+    if amount != lib::Cents(0) {
+        limits.set(year, amount);
+        output = format!("{} limit set to {}", year, amount);
+    } else if limits.remove(year).is_some() {
+        limits.remove(year);
+        output = format!("{} limit removed.", year);
+    } else {
+        updated = false;
+        output = format!("{} has no limit.", year);
+    };
+    if updated {
+        fs.write(&limits)
+            .with_context(|| format!("failed to write '{}'", fs.path::<lib::Limits>().display()))?;
+    }
+    Ok(Output::Str(output))
+}
+
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
-
     use super::*;
-    use crate::util::testing::env;
-    use crate::util::testing::Env;
-
-    #[rstest]
-    #[case("{}", 2015, lib::Cents(0), "{}", "2015 has no limit.\n")]
-    #[case(r#"{"2015":1}"#, 2015, lib::Cents(0), "{}", "2015 limit removed.\n")]
-    #[case(
-        r#"{"2015":1}"#,
-        2016,
-        lib::Cents(-123),
-        r#"{"2015":1,"2016":-123}"#,
-        "2016 limit set to (1.23)\n"
-    )]
-    fn test_update_limits(
-        env: Env,
-        #[case] limits: lib::Limits,
-        #[case] year: u16,
-        #[case] amount: lib::Cents,
-        #[case] want_limits: lib::Limits,
-        #[case] want_output: &str,
-    ) {
-        let output = update_limits(limits, year, amount, &env.fs)
-            .unwrap()
-            .to_string();
-        assert_eq!(env.fs.read::<lib::Limits>().unwrap(), want_limits);
-        assert_eq!(output, want_output);
-    }
+    use crate::testing;
+    use rstest::rstest;
 
     #[rstest]
     #[case("0", YearArg(0))]
@@ -171,4 +144,127 @@ mod tests {
     fn test_yeararg_from_str_failing(#[case] s: &str) {
         assert!(s.parse::<YearArg>().is_err())
     }
+
+    testing::generate_testcases![
+        (
+            remove_nonexistent,
+            testing::Case {
+                args: &["", "lim", "2015", "--set", "0"],
+                matcher: testing::ResultMatcher::OkStrGlob("2015 has no limit."),
+                initial_state: testing::StrState::new().with_config("{}"),
+            }
+        ),
+        (
+            remove,
+            testing::MutCase {
+                args: &["", "lim", "2015", "--set", "0"],
+                matcher: testing::ResultMatcher::OkStrGlob("2015 limit removed."),
+                initial_state: testing::StrState::new()
+                    .with_config("{}")
+                    .with_limits(r#"{"2015":1}"#),
+                final_state: testing::State::new()
+                    .with_config(lib::Config::default())
+                    .with_limits(lib::Limits::new()),
+            }
+        ),
+        (
+            set,
+            testing::MutCase {
+                args: &["", "lim", "2016", "--set=-1.23"],
+                matcher: testing::ResultMatcher::OkStrGlob("2016 limit set to (1.23)"),
+                initial_state: testing::StrState::new()
+                    .with_config("{}")
+                    .with_limits(r#"{"2015":1}"#),
+                final_state: testing::State::new()
+                    .with_config(lib::Config::default())
+                    .with_limits(r#"{"2015":1,"2016":-123}"#),
+            }
+        ),
+        (
+            view_explicit_limitkind,
+            testing::Case {
+                args: &["", "lim", "2015", "--view", "tfsa"],
+                matcher: testing::ResultMatcher::OkExact(Output::Limitprinter(
+                    lib::limitprinter::Config {
+                        charset: Default::default(),
+                        year: 2015,
+                        kind: lib::Limitkind::Tfsa,
+                        limits: r#"{
+                            "2014": 100,
+                            "2015": 100
+                        }"#
+                        .parse()
+                        .unwrap(),
+                        rl: r#"
+                            {"d":"2014-01-01","c":"aaa","a":100}
+                            {"d":"2015-01-01","c":"aaa","a":100}
+                        "#
+                        .parse()
+                        .unwrap(),
+                    }
+                )),
+                initial_state: testing::StrState::default()
+                    .with_config("{}")
+                    .with_limits(
+                        r#"{
+                            "2014": 100,
+                            "2015": 100
+                        }"#
+                    )
+                    .with_rl(
+                        r#"
+                            {"d":"2014-01-01","c":"aaa","a":100}
+                            {"d":"2015-01-01","c":"aaa","a":100}
+                        "#
+                    ),
+            }
+        ),
+        (
+            view_implicit_limitkind,
+            testing::Case {
+                args: &["", "lim"],
+                matcher: testing::ResultMatcher::OkExact(Output::Limitprinter(
+                    lib::limitprinter::Config {
+                        charset: Default::default(),
+                        year: lib::Date::today().year(),
+                        kind: lib::Limitkind::Tfsa,
+                        limits: r#"{
+                            "2014": 100,
+                            "2015": 100
+                        }"#
+                        .parse()
+                        .unwrap(),
+                        rl: r#"
+                            {"d":"2014-01-01","c":"aaa","a":100}
+                            {"d":"2015-01-01","c":"aaa","a":100}
+                        "#
+                        .parse()
+                        .unwrap(),
+                    }
+                )),
+                initial_state: testing::StrState::new()
+                    .with_config(r#"{"limAccountType":"tfsa"}"#)
+                    .with_limits(
+                        r#"{
+                            "2014": 100,
+                            "2015": 100
+                        }"#
+                    )
+                    .with_rl(
+                        r#"
+                            {"d":"2014-01-01","c":"aaa","a":100}
+                            {"d":"2015-01-01","c":"aaa","a":100}
+                        "#
+                    ),
+            }
+        ),
+        (
+            view_implicit_limitkind_without_one_being_configured,
+            testing::Case {
+                args: &["", "lim"],
+                matcher: testing::ResultMatcher::ErrGlob("no default account type configured"),
+                initial_state: testing::StrState::new().with_config("{}"),
+            }
+        ),
+    ];
 }

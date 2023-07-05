@@ -5,7 +5,6 @@ use crate::Record;
 use crate::Recordlist;
 use crate::Tree;
 
-#[derive(Default)]
 pub struct Config {
     pub charset: Charset,
     pub first_iid: usize,
@@ -31,15 +30,35 @@ pub struct Config {
     >,
 }
 
-pub struct LsppArgs<'a> {
-    pub r: &'a Record,
-    /// `r`'s zero-based index-in-date.
-    pub iid0: usize,
-    /// `r`'s original node string. Will be in one of these formats depending on
-    /// whether or not `r`'s note field is empty:
-    /// 1. `{iid} -- {amount} {category}`
-    /// 1. `{iid} -- {amount} {category}: {note}`
-    pub leaf_string: String,
+impl Eq for Config {}
+impl PartialEq for Config {
+    fn eq(&self, other: &Self) -> bool {
+        self.charset == other.charset
+            && self.first_iid == other.first_iid
+            && self.rl == other.rl
+            // This is a simplification. In general, the only way to tell if two
+            // functions are equal is to check if both produce equal outputs for
+            // all inputs, which is not feasible.
+            && self.leaf_string_postprocessor.is_some()
+                == other.leaf_string_postprocessor.is_some()
+    }
+}
+
+impl std::fmt::Debug for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("charset", &self.charset)
+            .field("first_iid", &self.first_iid)
+            .field("rl", &self.rl)
+            .field(
+                "leaf_string_postprocessor",
+                &self
+                    .leaf_string_postprocessor
+                    .as_ref()
+                    .map(|b| b as *const _),
+            )
+            .finish()
+    }
 }
 
 impl Config {
@@ -170,10 +189,9 @@ fn last_child(node: &mut Node) -> &mut Node {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use indoc::indoc;
     use rstest::rstest;
-
-    use super::*;
 
     #[rstest]
     #[case(0, "", "")]
@@ -276,6 +294,68 @@ mod tests {
             charset: Charset::default(),
             first_iid,
             leaf_string_postprocessor: None,
+            rl,
+        };
+        let tr = config.to_tree();
+        assert_eq!(tr.to_string(), want);
+    }
+
+    #[test]
+    fn test_leaf_string_postprocessor() {
+        let rl = r#"
+            {"d":"0000-01-31","c":"aaa","a":0}
+            {"d":"2015-03-30","c":"b","a":1}
+            {"d":"2015-03-30","c":"bb","a":1}
+            {"d":"2015-03-30","c":"bbb","a":1}
+            {"d":"2015-03-30","c":"bbbb","a":1}
+            {"d":"2015-03-30","c":"bbbbb","a":1}
+            {"d":"2015-03-30","c":"bbbbb","a":-1}
+            {"d":"2015-03-30","c":"bbbb","a":-1}
+            {"d":"2015-03-30","c":"bbb","a":-1}
+            {"d":"2015-03-30","c":"bb","a":-1}
+            {"d":"2015-03-30","c":"b","a":-123456789}
+            {"d":"2015-03-31","c":"ccc","a":123456}
+        "#
+        .parse::<Recordlist>()
+        .unwrap();
+
+        fn lspp(_: &Config, _: &Record, iid0: usize, mut leaf_string: String) -> String {
+            match iid0 % 3 {
+                0 => leaf_string.insert_str(0, "[0]"),
+                1 => leaf_string.push_str("[1]"),
+                _ => {}
+            }
+            leaf_string
+        }
+
+        let want = indoc!(
+            "
+            0000
+            `-- Jan
+                `-- 31st
+                    `-- [0]1 ------------ 0.00  aaa
+            2015
+            `-- Mar
+                |-- 30th
+                |   |-- [0]1 ------------ 0.01  b
+                |   |-- 2 ------------ 0.01  bb[1]
+                |   |-- 3 ------------ 0.01  bbb
+                |   |-- [0]4 ------------ 0.01  bbbb
+                |   |-- 5 ------------ 0.01  bbbbb[1]
+                |   |-- 6 ----------- (0.01) bbbbb
+                |   |-- [0]7 ----------- (0.01) bbbb
+                |   |-- 8 ----------- (0.01) bbb[1]
+                |   |-- 9 ----------- (0.01) bb
+                |   `-- [0]10 -- (1,234,567.89) b
+                `-- 31st
+                    `-- [0]1 -------- 1,234.56  ccc
+            "
+        );
+
+        let config = Config {
+            charset: Charset::default(),
+            first_iid: 1,
+            leaf_string_postprocessor: Some(Box::new(lspp)),
             rl,
         };
         let tr = config.to_tree();

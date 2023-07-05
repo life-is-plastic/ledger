@@ -40,11 +40,15 @@ impl Plot {
             charset: util::charset_from_config(config),
             bounds: self.interval,
             unit: self.unit,
-            term_width: terminal_size::terminal_size()
-                .map(|(w, _)| w.0)
-                .unwrap_or_default() as usize,
+            term_width: term_width(),
             rl,
         };
         Ok(Output::Barchart(chart_config))
     }
+}
+
+fn term_width() -> usize {
+    terminal_size::terminal_size()
+        .map(|(w, _)| w.0)
+        .unwrap_or_default() as usize
 }

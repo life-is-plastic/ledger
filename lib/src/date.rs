@@ -207,11 +207,18 @@ impl std::str::FromStr for Date {
     }
 }
 
+impl TryFrom<&str> for Date {
+    type Error = <Self as std::str::FromStr>::Err;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.parse::<Self>()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
-
     use super::*;
+    use rstest::rstest;
 
     #[test]
     fn test_min_max_consts() {

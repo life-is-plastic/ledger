@@ -55,12 +55,19 @@ impl std::str::FromStr for Limits {
     }
 }
 
+impl TryFrom<&str> for Limits {
+    type Error = <Self as std::str::FromStr>::Err;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.parse::<Self>()
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
     use indoc::indoc;
     use rstest::rstest;
-
-    use super::*;
 
     #[rstest]
     #[case(indoc!("{}\n"), vec![])]

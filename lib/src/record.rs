@@ -56,11 +56,18 @@ impl std::str::FromStr for Record {
     }
 }
 
+impl TryFrom<&str> for Record {
+    type Error = <Self as std::str::FromStr>::Err;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.parse::<Self>()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
-
     use super::*;
+    use rstest::rstest;
 
     #[rstest]
     #[case(

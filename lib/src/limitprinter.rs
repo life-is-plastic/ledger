@@ -1,7 +1,6 @@
 use crate::util;
 use crate::Cents;
 use crate::Charset;
-use crate::Date;
 use crate::Limitkind;
 use crate::Limits;
 use crate::Recordlist;
@@ -15,24 +14,13 @@ pub struct Limitprinter<'a> {
     alignment_charlen: usize,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Config {
     pub charset: Charset,
-    pub today: Date,
+    pub year: u16,
     pub kind: Limitkind,
     pub limits: Limits,
     pub rl: Recordlist,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            charset: Default::default(),
-            today: Date::today(),
-            kind: Limitkind::Rrsp,
-            limits: Default::default(),
-            rl: Default::default(),
-        }
-    }
 }
 
 impl Config {
@@ -40,12 +28,12 @@ impl Config {
         let limits = self
             .limits
             .iter()
-            .filter(|&(year, _)| year <= self.today.year())
+            .filter(|&(y, _)| y <= self.year)
             .map(|(year, limit)| (format!("{:0>4}", year), limit))
             .collect::<Vec<_>>();
 
         let total = limits.iter().map(|&(_, limit)| limit).sum::<Cents>();
-        let remaining = self.kind.remaining(&self.limits, &self.rl, self.today);
+        let remaining = self.kind.remaining(&self.limits, &self.rl, self.year);
         let summary = [("Total".into(), total), ("Remaining".into(), remaining)];
 
         fn char_count((label, value): &(String, Cents)) -> usize {
@@ -107,14 +95,13 @@ impl std::fmt::Display for Limitprinter<'_> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use indoc::indoc;
     use rstest::rstest;
 
-    use super::*;
-
     #[rstest]
     #[case(
-        "2015-03-30",
+        2015,
         "rrsp",
         "{}",
         "",
@@ -124,7 +111,7 @@ mod tests {
         ")
     )]
     #[case(
-        "2015-03-30",
+        2015,
         "rrsp",
         "{}",
         r#"{"d":"2015-03-30","c":"aaa","a":100000}"#,
@@ -134,7 +121,7 @@ mod tests {
         ")
     )]
     #[case(
-        "2015-03-30",
+        2015,
         "tfsa",
         "{}",
         r#"{"d":"2014-03-30","c":"aaa","a":-100000}"#,
@@ -144,7 +131,7 @@ mod tests {
         ")
     )]
     #[case(
-        "2015-03-30",
+        2015,
         "rrsp",
         r#"{
             "40": 100000,
@@ -162,7 +149,7 @@ mod tests {
         ")
     )]
     fn test_to_string(
-        #[case] today: Date,
+        #[case] year: u16,
         #[case] kind: Limitkind,
         #[case] limits: Limits,
         #[case] rl: Recordlist,
@@ -170,7 +157,7 @@ mod tests {
     ) {
         let config = Config {
             charset: Charset::default(),
-            today,
+            year,
             kind,
             limits,
             rl,

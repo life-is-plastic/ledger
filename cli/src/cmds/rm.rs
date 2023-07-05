@@ -76,74 +76,113 @@ impl Rm {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::testing;
     use rstest::rstest;
 
-    use super::*;
-    use crate::util::testing::env;
-    use crate::util::testing::Env;
-
-    #[rstest]
-    #[case(
-        Rm {
-            date: lib::Date::MIN,
-            index: 0,
-            yes: true,
-        },
-        "",
-    )]
-    #[case(
-        Rm {
-            date: lib::Date::MIN,
-            index: 0,
-            yes: false,
-        },
-        r#"
-            {"d":"2015-03-01","c":"abc","a":111}
-            {"d":"2015-03-30","c":"category","a":111}
-            {"d":"2015-03-30","c":"category","a":111}
-            {"d":"2015-03-30","c":"category","a":111}
-            {"d":"2015-04-01","c":"category","a":111}
-        "#,
-    )]
-    fn test_bad_index(env: Env, #[case] rm: Rm, #[case] rl: lib::Recordlist) {
-        let res = rm.run(rl, &env.config, &env.fs);
-        assert!(res.is_err());
+    /// Equality checks on `lib::tree::forview::Config` does not care about the
+    /// `Some` payload of `leaf_string_postprocessor`. Rather, equality only
+    /// requires either both sides to be `Some`, or both sides to be `None`.
+    /// This function helps generate a dummy paylod for `Some`.
+    fn dummy_lspp(
+    ) -> Box<dyn Fn(&lib::tree::forview::Config, &lib::Record, usize, String) -> String> {
+        fn f(_: &lib::tree::forview::Config, _: &lib::Record, _: usize, _: String) -> String {
+            String::default()
+        }
+        Box::new(f)
     }
 
+    testing::generate_testcases![
+        (
+            nonexistent,
+            testing::Case {
+                args: &["", "rm", "0000-01-01", "0", "--yes"],
+                matcher: testing::ResultMatcher::ErrGlob("nonexistent transaction"),
+                initial_state: testing::StrState::new().with_config("{}"),
+            }
+        ),
+        (
+            bad_index,
+            testing::Case {
+                args: &["", "rm", "0000-01-01", "4"],
+                matcher: testing::ResultMatcher::ErrGlob("nonexistent transaction"),
+                initial_state: testing::StrState::new().with_config("{}").with_rl(
+                    r#"
+                        {"d":"0000-01-01","c":"abc","a":111}
+                        {"d":"0000-01-01","c":"def","a":111,"n":"note"}
+                    "#
+                ),
+            }
+        ),
+        (
+            dry_run,
+            testing::Case {
+                args: &["", "rm", "0000-01-01", "1"],
+                matcher: testing::ResultMatcher::OkExact(Output::TreeForView(
+                    lib::tree::forview::Config {
+                        charset: Default::default(),
+                        first_iid: 0,
+                        rl: r#"
+                            {"d":"0000-01-01","c":"abc","a":111}
+                            {"d":"0000-01-01","c":"def","a":111,"n":"note"}
+                        "#
+                        .parse()
+                        .unwrap(),
+                        leaf_string_postprocessor: Some(dummy_lspp()),
+                    }
+                )),
+                initial_state: testing::StrState::new().with_config("{}").with_rl(
+                    r#"
+                        {"d":"0000-01-01","c":"abc","a":111}
+                        {"d":"0000-01-01","c":"def","a":111,"n":"note"}
+                    "#
+                ),
+            }
+        ),
+        (
+            wet_run,
+            testing::MutCase {
+                args: &["", "rm", "0000-01-01", "1", "--yes"],
+                matcher: testing::ResultMatcher::OkExact(Output::TreeForView(
+                    lib::tree::forview::Config {
+                        charset: Default::default(),
+                        first_iid: 0,
+                        rl: r#"
+                            {"d":"0000-01-01","c":"abc","a":111}
+                            {"d":"0000-01-01","c":"def","a":111,"n":"note"}
+                        "#
+                        .parse()
+                        .unwrap(),
+                        leaf_string_postprocessor: Some(dummy_lspp()),
+                    }
+                )),
+                initial_state: testing::StrState::new().with_config("{}").with_rl(
+                    r#"
+                        {"d":"0000-01-01","c":"abc","a":111}
+                        {"d":"0000-01-01","c":"def","a":111,"n":"note"}
+                    "#
+                ),
+                final_state: testing::State::new()
+                    .with_config(lib::Config::default())
+                    .with_rl(r#"{"d":"0000-01-01","c":"abc","a":111}"#),
+            }
+        ),
+    ];
+
     #[rstest]
-    #[case(
-        Rm {
-            date: lib::Date::MIN,
-            index: 0,
-            yes: false,
-        },
-        r#"
-            {"d":"0000-01-01","c":"abc","a":111}
-            {"d":"0000-01-01","c":"def","a":111,"n":"note"}
-        "#,
-        r#"
-            {"d":"0000-01-01","c":"abc","a":111}
-            {"d":"0000-01-01","c":"def","a":111,"n":"note"}
-        "#,
-        "abc <- [WOULD BE REMOVED]"
-    )]
-    #[case(
+    #[case::dry_run(
         Rm {
             date: lib::Date::MIN,
             index: 1,
             yes: false,
         },
-        r#"
-            {"d":"0000-01-01","c":"abc","a":111}
-            {"d":"0000-01-01","c":"def","a":111,"n":"note"}
-        "#,
         r#"
             {"d":"0000-01-01","c":"abc","a":111}
             {"d":"0000-01-01","c":"def","a":111,"n":"note"}
         "#,
         "def: note <- [WOULD BE REMOVED]"
     )]
-    #[case(
+    #[case::wet_run(
         Rm {
             date: lib::Date::MIN,
             index: 1,
@@ -153,19 +192,24 @@ mod tests {
             {"d":"0000-01-01","c":"abc","a":111}
             {"d":"0000-01-01","c":"def","a":111,"n":"note"}
         "#,
-        r#"{"d":"0000-01-01","c":"abc","a":111}"#,
         "def: note <- [REMOVED]"
     )]
-    fn test_specifying_yes(
-        env: Env,
+    fn test_leaf_string_postprocessor(
         #[case] rm: Rm,
         #[case] rl: lib::Recordlist,
-        #[case] want_rl: lib::Recordlist,
         #[case] want_in_output: &str,
     ) {
-        env.fs.write(&rl).unwrap();
-        let output = rm.run(rl, &env.config, &env.fs).unwrap().to_string();
-        assert_eq!(env.fs.read::<lib::Recordlist>().unwrap(), want_rl);
-        assert!(output.contains(want_in_output));
+        let (fs, _td) = testing::tempfs();
+        fs.write(&rl).unwrap();
+        let output = rm
+            .run(rl, &lib::Config::default(), &fs)
+            .unwrap()
+            .to_string();
+        assert!(
+            output.contains(want_in_output),
+            "substring `{}` not found in `{}`",
+            want_in_output,
+            output,
+        );
     }
 }

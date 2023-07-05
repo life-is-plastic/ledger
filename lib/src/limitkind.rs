@@ -1,5 +1,4 @@
 use crate::Cents;
-use crate::Date;
 use crate::Limits;
 use crate::Recordlist;
 
@@ -25,57 +24,50 @@ pub enum Limitkind {
 }
 
 impl Limitkind {
-    pub fn remaining(self, limits: &Limits, rl: &Recordlist, today: Date) -> Cents {
+    pub fn remaining(self, limits: &Limits, rl: &Recordlist, year: u16) -> Cents {
         match self {
-            Limitkind::Rrsp => Self::remaining_rrsp(limits, rl, today),
-            Limitkind::Tfsa => Self::remaining_tfsa(limits, rl, today),
+            Limitkind::Rrsp => Self::remaining_rrsp(limits, rl, year),
+            Limitkind::Tfsa => Self::remaining_tfsa(limits, rl, year),
         }
     }
 
-    fn remaining_rrsp(limits: &Limits, rl: &Recordlist, today: Date) -> Cents {
+    fn remaining_rrsp(limits: &Limits, rl: &Recordlist, year: u16) -> Cents {
         let contributions = rl
             .iter()
-            .map(
-                |r| match r.date().year() <= today.year() && r.amount().0 > 0 {
-                    true => r.amount().0,
-                    false => 0,
-                },
-            )
+            .map(|r| match r.date().year() <= year && r.amount().0 > 0 {
+                true => r.amount().0,
+                false => 0,
+            })
             .sum::<i64>();
-        Cents(limits.inception_to_year(today.year()) - contributions)
+        Cents(limits.inception_to_year(year) - contributions)
     }
 
-    fn remaining_tfsa(limits: &Limits, rl: &Recordlist, today: Date) -> Cents {
+    fn remaining_tfsa(limits: &Limits, rl: &Recordlist, year: u16) -> Cents {
         let contributions = rl
             .iter()
-            .map(
-                |r| match r.date().year() <= today.year() && r.amount().0 > 0 {
-                    true => r.amount().0,
-                    false => 0,
-                },
-            )
+            .map(|r| match r.date().year() <= year && r.amount().0 > 0 {
+                true => r.amount().0,
+                false => 0,
+            })
             .sum::<i64>();
         let withdrawals_before_year = rl
             .iter()
-            .map(
-                |r| match r.date().year() < today.year() && r.amount().0 < 0 {
-                    true => -r.amount().0,
-                    false => 0,
-                },
-            )
+            .map(|r| match r.date().year() < year && r.amount().0 < 0 {
+                true => -r.amount().0,
+                false => 0,
+            })
             .sum::<i64>();
-        Cents(limits.inception_to_year(today.year()) - contributions + withdrawals_before_year)
+        Cents(limits.inception_to_year(year) - contributions + withdrawals_before_year)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use rstest::rstest;
 
-    use super::*;
-
     #[rstest]
-    #[case("{}", "", "d", Cents(0), Cents(0))]
+    #[case("{}", "", 2015, Cents(0), Cents(0))]
     #[case(
         r#"{
             "2015": 5000,
@@ -92,7 +84,7 @@ mod tests {
             {"d":"2018-01-01","c":"aaa","a":4000}
             {"d":"2018-01-01","c":"aaa","a":4000}
         "#,
-        "2014-01-01",
+        2014,
         Cents(-1000 - 500),
         Cents(-1000 - 500),
     )]
@@ -111,7 +103,7 @@ mod tests {
             {"d":"2017-01-01","c":"aaa","a":10000}
             {"d":"2018-01-01","c":"aaa","a":4000}
         "#,
-        "2015-01-01",
+        2015,
         Cents(5000 - 1000 - 500 - 2000),
         Cents(5000 - 1000 - 500 - 2000),
     )]
@@ -130,7 +122,7 @@ mod tests {
             {"d":"2017-01-01","c":"aaa","a":10000}
             {"d":"2018-01-01","c":"aaa","a":4000}
         "#,
-        "2016-01-01",
+        2016,
         Cents(5000 + 5000 - 1000 - 500 - 2000 - 3000),
         Cents(5000 + 5000 - 1000 - 500 - 2000 + 10000 - 3000),
     )]
@@ -149,7 +141,7 @@ mod tests {
             {"d":"2017-01-01","c":"aaa","a":10000}
             {"d":"2018-01-01","c":"aaa","a":4000}
         "#,
-        "2017-01-01",
+        2017,
         Cents(5000 + 5000 + 5000 - 1000 - 500 - 2000 - 3000 - 10000),
         Cents(5000 + 5000 + 5000 - 1000 - 500 - 2000 + 10000 - 3000 - 10000),
     )]
@@ -168,18 +160,24 @@ mod tests {
             {"d":"2017-01-01","c":"aaa","a":10000}
             {"d":"2018-01-01","c":"aaa","a":4000}
         "#,
-        "2018-01-01",
+        2018,
         Cents(5000 + 5000 + 5000 - 1000 - 500 - 2000 - 3000 - 10000 - 4000),
         Cents(5000 + 5000 + 5000 - 1000 - 500 - 2000 + 10000 - 3000 - 10000 - 4000),
     )]
     fn test_remaining(
         #[case] limits: Limits,
         #[case] rl: Recordlist,
-        #[case] today: Date,
+        #[case] current_year: u16,
         #[case] want_rrsp: Cents,
         #[case] want_tfsa: Cents,
     ) {
-        assert_eq!(Limitkind::Rrsp.remaining(&limits, &rl, today,), want_rrsp);
-        assert_eq!(Limitkind::Tfsa.remaining(&limits, &rl, today,), want_tfsa);
+        assert_eq!(
+            Limitkind::Rrsp.remaining(&limits, &rl, current_year),
+            want_rrsp
+        );
+        assert_eq!(
+            Limitkind::Tfsa.remaining(&limits, &rl, current_year),
+            want_tfsa
+        );
     }
 }

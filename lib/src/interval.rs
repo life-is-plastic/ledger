@@ -5,10 +5,24 @@ use crate::Datepart;
 /// Interval defined by the inclusive bound of two dates. If `start` is greater
 /// than `end`, the interval is considered empty. ALl empty intervals are
 /// equivalent.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq)]
 pub struct Interval {
     pub start: Date,
     pub end: Date,
+}
+
+impl PartialEq for Interval {
+    fn eq(&self, other: &Self) -> bool {
+        self.is_empty() && other.is_empty() || self.start == other.start && self.end == other.end
+    }
+}
+
+impl std::hash::Hash for Interval {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let interval = if self.is_empty() { Self::EMPTY } else { *self };
+        interval.start.hash(state);
+        interval.end.hash(state);
+    }
 }
 
 impl Interval {
@@ -81,22 +95,6 @@ impl Interval {
     }
 }
 
-impl PartialEq for Interval {
-    fn eq(&self, other: &Self) -> bool {
-        self.is_empty() && other.is_empty() || self.start == other.start && self.end == other.end
-    }
-}
-
-impl Eq for Interval {}
-
-impl std::hash::Hash for Interval {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        let interval = if self.is_empty() { Self::EMPTY } else { *self };
-        interval.start.hash(state);
-        interval.end.hash(state);
-    }
-}
-
 impl std::fmt::Display for Interval {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}:{}", self.start, self.end)
@@ -144,11 +142,18 @@ impl std::str::FromStr for Interval {
     }
 }
 
+impl TryFrom<&str> for Interval {
+    type Error = <Self as std::str::FromStr>::Err;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.parse::<Self>()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
-
     use super::*;
+    use rstest::rstest;
 
     #[rstest]
     #[case("2015-03-30:2015-03-30", "2015-03-30", "2015-03-30")]

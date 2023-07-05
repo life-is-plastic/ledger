@@ -4,6 +4,35 @@ pub struct Aggregate<K, V> {
     sum: V,
 }
 
+impl<K, V> Default for Aggregate<K, V>
+where
+    V: Default,
+{
+    fn default() -> Self {
+        Self {
+            m: Default::default(),
+            sum: Default::default(),
+        }
+    }
+}
+
+impl<K, V> PartialEq for Aggregate<K, V>
+where
+    K: Eq + std::hash::Hash,
+    V: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.m == other.m && self.sum == other.sum
+    }
+}
+
+impl<K, V> Eq for Aggregate<K, V>
+where
+    K: Eq + std::hash::Hash,
+    V: Eq,
+{
+}
+
 impl<K, V> Aggregate<K, V> {
     pub fn sum(&self) -> V
     where
@@ -44,35 +73,6 @@ impl<K, V> Aggregate<K, V> {
     {
         self.m.iter().map(|(&k, &v)| (k, v))
     }
-}
-
-impl<K, V> Default for Aggregate<K, V>
-where
-    V: Default,
-{
-    fn default() -> Self {
-        Self {
-            m: Default::default(),
-            sum: Default::default(),
-        }
-    }
-}
-
-impl<K, V> PartialEq for Aggregate<K, V>
-where
-    K: Eq + std::hash::Hash,
-    V: PartialEq,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.m == other.m && self.sum == other.sum
-    }
-}
-
-impl<K, V> Eq for Aggregate<K, V>
-where
-    K: Eq + std::hash::Hash,
-    V: Eq,
-{
 }
 
 impl<K, V> FromIterator<(K, V)> for Aggregate<K, V>

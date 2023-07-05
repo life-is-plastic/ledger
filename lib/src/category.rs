@@ -69,7 +69,7 @@ impl std::str::FromStr for Category {
 }
 
 impl TryFrom<&str> for Category {
-    type Error = ParseError;
+    type Error = <Self as std::str::FromStr>::Err;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         value.parse::<Self>()
@@ -78,9 +78,8 @@ impl TryFrom<&str> for Category {
 
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
-
     use super::*;
+    use rstest::rstest;
 
     #[rstest]
     #[case("", false)]

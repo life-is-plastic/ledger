@@ -1,26 +1,14 @@
 use crate::Limitkind;
 
 /// Application config.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Config {
     pub first_index_in_date: usize,
     pub lim_account_type: Option<Limitkind>,
-    pub unsigned_is_positive: bool,
+    pub unsigned_is_negative: bool,
     pub use_colored_output: bool,
     pub use_unicode_symbols: bool,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            first_index_in_date: 1,
-            lim_account_type: None,
-            unsigned_is_positive: true,
-            use_colored_output: true,
-            use_unicode_symbols: true,
-        }
-    }
 }
 
 impl std::fmt::Display for Config {
@@ -36,5 +24,13 @@ impl std::str::FromStr for Config {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         serde_json::from_str(s)
+    }
+}
+
+impl TryFrom<&str> for Config {
+    type Error = <Self as std::str::FromStr>::Err;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        value.parse::<Self>()
     }
 }

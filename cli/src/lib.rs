@@ -7,4 +7,4 @@ pub use cmds::main;
 use output::Output;
 
 #[cfg(test)]
-mod tests;
+mod testing;

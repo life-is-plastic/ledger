@@ -17,9 +17,8 @@ pub const fn count_digits(n: u64) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use rstest::rstest;
-
     use super::*;
+    use rstest::rstest;
 
     #[rstest]
     #[case(0, 1)]

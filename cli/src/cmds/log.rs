@@ -38,7 +38,7 @@ impl Log {
         let r = lib::Record::new(
             self.date,
             self.category,
-            self.amount.into_cents(config.unsigned_is_positive),
+            self.amount.into_cents(config.unsigned_is_negative),
             self.note,
         );
         rl.insert(r);
@@ -72,14 +72,14 @@ enum CentsArg {
 }
 
 impl CentsArg {
-    fn into_cents(self, unsigned_is_positive: bool) -> lib::Cents {
+    fn into_cents(self, unsigned_is_negative: bool) -> lib::Cents {
         match self {
             CentsArg::Signed(x) => x,
             CentsArg::Unsigned(x) => {
-                if unsigned_is_positive {
-                    x.0.abs().into()
-                } else {
+                if unsigned_is_negative {
                     (-x.0.abs()).into()
+                } else {
+                    x.0.abs().into()
                 }
             }
         }
@@ -102,24 +102,93 @@ impl std::str::FromStr for CentsArg {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::testing;
     use rstest::rstest;
 
-    use super::*;
-
     #[rstest]
-    #[case(CentsArg::Signed(lib::Cents(123)), true, lib::Cents(123))]
     #[case(CentsArg::Signed(lib::Cents(123)), false, lib::Cents(123))]
-    #[case(CentsArg::Signed(lib::Cents(-123)), true, lib::Cents(-123))]
+    #[case(CentsArg::Signed(lib::Cents(123)), true, lib::Cents(123))]
     #[case(CentsArg::Signed(lib::Cents(-123)), false, lib::Cents(-123))]
-    #[case(CentsArg::Unsigned(lib::Cents(123)), true, lib::Cents(123))]
-    #[case(CentsArg::Unsigned(lib::Cents(123)), false, lib::Cents(-123))]
-    #[case(CentsArg::Unsigned(lib::Cents(-123)), true, lib::Cents(123))]
-    #[case(CentsArg::Unsigned(lib::Cents(-123)), false, lib::Cents(-123))]
+    #[case(CentsArg::Signed(lib::Cents(-123)), true, lib::Cents(-123))]
+    #[case(CentsArg::Unsigned(lib::Cents(123)), false, lib::Cents(123))]
+    #[case(CentsArg::Unsigned(lib::Cents(123)), true, lib::Cents(-123))]
+    #[case(CentsArg::Unsigned(lib::Cents(-123)), false, lib::Cents(123))]
+    #[case(CentsArg::Unsigned(lib::Cents(-123)), true, lib::Cents(-123))]
     fn test_centsarg_into_cents(
         #[case] arg: CentsArg,
-        #[case] unsigned_is_positive: bool,
+        #[case] unsigned_is_negative: bool,
         #[case] want: lib::Cents,
     ) {
-        assert_eq!(arg.into_cents(unsigned_is_positive), want)
+        assert_eq!(arg.into_cents(unsigned_is_negative), want)
     }
+
+    testing::generate_testcases![
+        (
+            normal_execution,
+            testing::MutCase {
+                args: &["", "log", "aaa", "-1.23", "2015-03-30", "--note", "qwerty"],
+                matcher: testing::ResultMatcher::OkExact(Output::TreeForView(
+                    lib::tree::forview::Config {
+                        charset: Default::default(),
+                        first_iid: 0,
+                        rl: r#"{"d":"2015-03-30","c":"aaa","a":-123,"n":"qwerty"}"#
+                            .parse()
+                            .unwrap(),
+                        leaf_string_postprocessor: None,
+                    }
+                )),
+                initial_state: testing::StrState::new().with_config("{}"),
+                final_state: testing::State::new()
+                    .with_config(lib::Config::default())
+                    .with_rl(r#"{"d":"2015-03-30","c":"aaa","a":-123,"n":"qwerty"}"#),
+            }
+        ),
+        (
+            unsigned_positive,
+            testing::MutCase {
+                args: &["", "log", "aaa", "1.23"],
+                matcher: testing::ResultMatcher::OkExact(Output::TreeForView(
+                    lib::tree::forview::Config {
+                        charset: Default::default(),
+                        first_iid: 0,
+                        rl: format!(r#"{{"d":"{}","c":"aaa","a":123}}"#, lib::Date::today())
+                            .parse()
+                            .unwrap(),
+                        leaf_string_postprocessor: None,
+                    }
+                )),
+                initial_state: testing::StrState::new()
+                    .with_config(r#"{"unsignedIsNegative":false}"#),
+                final_state: testing::State::new()
+                    .with_config(r#"{"unsignedIsNegative":false}"#)
+                    .with_rl(
+                        format!(r#"{{"d":"{}","c":"aaa","a":123}}"#, lib::Date::today()).as_str()
+                    ),
+            }
+        ),
+        (
+            unsigned_negative,
+            testing::MutCase {
+                args: &["", "log", "aaa", "1.23"],
+                matcher: testing::ResultMatcher::OkExact(Output::TreeForView(
+                    lib::tree::forview::Config {
+                        charset: Default::default(),
+                        first_iid: 0,
+                        rl: format!(r#"{{"d":"{}","c":"aaa","a":-123}}"#, lib::Date::today())
+                            .parse()
+                            .unwrap(),
+                        leaf_string_postprocessor: None,
+                    }
+                )),
+                initial_state: testing::StrState::new()
+                    .with_config(r#"{"unsignedIsNegative":true}"#),
+                final_state: testing::State::new()
+                    .with_config(r#"{"unsignedIsNegative":true}"#)
+                    .with_rl(
+                        format!(r#"{{"d":"{}","c":"aaa","a":-123}}"#, lib::Date::today()).as_str()
+                    ),
+            }
+        ),
+    ];
 }

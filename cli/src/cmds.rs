@@ -13,7 +13,7 @@ use anyhow::Context;
 /// Cash flow tracker
 #[derive(clap::Parser)]
 #[command(color = clap::ColorChoice::Never)]
-struct Root {
+pub struct Root {
     #[command(subcommand)]
     command: Commands,
 }
@@ -31,7 +31,7 @@ enum Commands {
 }
 
 impl Root {
-    fn run(self, fs: &lib::Fs) -> anyhow::Result<Output> {
+    pub fn run(self, fs: &lib::Fs) -> anyhow::Result<Output> {
         if let Commands::Init(cmd) = self.command {
             return cmd.run(fs);
         }
@@ -77,5 +77,30 @@ pub fn main() {
         e.chain().for_each(|cause| eprint!(": {}", cause));
         eprintln!();
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testing;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(&["", "log", "aaa", "123"])]
+    #[case(&["", "rm", "d", "0"])]
+    #[case(&["", "view"])]
+    #[case(&["", "cats"])]
+    #[case(&["", "sum"])]
+    #[case(&["", "plot"])]
+    #[case(&["", "lim", "--set", "0"])]
+    fn test_error_if_not_a_repo(#[case] args: &[&str]) {
+        let (fs, _td) = testing::tempfs();
+        let root = match <Root as clap::Parser>::try_parse_from(args) {
+            Ok(cmd) => cmd,
+            Err(e) => panic!("{}", e),
+        };
+        let res = root.run(&fs);
+        assert!(matches!(res, Err(ref e) if e.to_string() == "not a repository"))
     }
 }
