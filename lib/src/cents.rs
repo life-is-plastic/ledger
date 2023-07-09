@@ -25,9 +25,13 @@ use crate::util;
 pub struct Cents(pub i64);
 
 impl Cents {
+    pub const fn abs(self) -> Self {
+        Self(self.0.abs())
+    }
+
     /// Returns `cents.to_string().len()` without actually building a string.
     pub fn charlen(self) -> usize {
-        let n = self.0.abs().max(100) as u64;
+        let n = self.abs().0.max(100) as u64;
         let mut len = util::count_digits(n);
         len += (len - 3) / 3; // commas
         len += 1; // decimal point
@@ -51,7 +55,7 @@ impl std::fmt::Display for Cents {
     /// Formats with two decimal places and thousands separators. Negative
     /// quantities are wrapped in parentheses.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut cents = self.0.abs();
+        let mut cents = self.abs().0;
         let mut bytes = Vec::<u8>::new();
         macro_rules! pop_digit {
             () => {

@@ -12,9 +12,9 @@ pub struct Barchart<'cs> {
     bounds: Interval,
     unit: Datepart,
     pos: Aggregate<Date, Cents>,
-    neg: Aggregate<Date, Cents>, // absolute value
+    neg: Aggregate<Date, Cents>,
     label_charlen: usize,
-    max_val: Cents,
+    max_abs_val: Cents,
     max_barlen: usize,
 }
 
@@ -36,7 +36,7 @@ impl Config {
             for r in self.rl.slice_spanning_interval(interval) {
                 match r.amount().cmp(&Cents(0)) {
                     std::cmp::Ordering::Greater => pos.add(interval.start, r.amount()),
-                    std::cmp::Ordering::Less => neg.add(interval.start, -r.amount()),
+                    std::cmp::Ordering::Less => neg.add(interval.start, r.amount()),
                     _ => {}
                 }
             }
@@ -47,15 +47,20 @@ impl Config {
             Datepart::Month => 8, // yyyy mmm
             Datepart::Day => 10,  // yyyy-mm-dd
         };
-        let max_val = Cents::max(
-            pos.iter().map(|(_, v)| v).max().unwrap_or_default(),
-            neg.iter().map(|(_, v)| v).max().unwrap_or_default(),
+        let max_abs_val = Cents::max(
+            pos.iter().map(|(_, v)| v.abs()).max().unwrap_or_default(),
+            neg.iter().map(|(_, v)| v.abs()).max().unwrap_or_default(),
         );
+        // Below, we use `(-max_abs_val)` to compute `max_barlen` as a
+        // simplification. This way, we avoid having to compute the actual bar
+        // lengths of every entry. Unfortunately, it also means if `max_abs_val`
+        // was sourced from a positive entry, the overall chart may end up with
+        // a width of `term_width - 2` instead of `term_width`.
         let max_barlen = self.term_width.max(util::MIN_TERM_WIDTH)
             - label_charlen // max 10
             - util::BOUNDING_SPACES_COUNT
             - 1 // vertical divider just before bar
-            - (-max_val).charlen(); // max 27
+            - (-max_abs_val).charlen(); // max 27
 
         Barchart {
             charset: &self.charset,
@@ -64,7 +69,7 @@ impl Config {
             pos,
             neg,
             label_charlen,
-            max_val,
+            max_abs_val,
             max_barlen,
         }
     }
@@ -85,7 +90,7 @@ impl Barchart<'_> {
     }
 
     fn barlen(&self, val: Cents) -> usize {
-        let x = (val.0 as f64) / (self.max_val.0 as f64) * (self.max_barlen as f64);
+        let x = (val.abs().0 as f64) / (self.max_abs_val.0 as f64) * (self.max_barlen as f64);
         self.max_barlen.min(x.round() as usize)
     }
 
@@ -125,7 +130,7 @@ impl Barchart<'_> {
             w.write_str(self.charset.color_suffix)?;
             w.write_char(' ')?;
         }
-        writeln!(w, "{}", -val)?;
+        writeln!(w, "{}", val)?;
         Ok(())
     }
 }

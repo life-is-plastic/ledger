@@ -66,7 +66,7 @@ impl Config {
         let alignment_charlen = self.get_alignment_charlen();
         let mut root = Node::default();
         for (iid0, r) in self.rl.iter_with_iid() {
-            self.make_year(&mut root, r, iid0, alignment_charlen);
+            self.make_year_node(&mut root, r, iid0, alignment_charlen);
         }
         Tree {
             charset: &self.charset,
@@ -121,12 +121,12 @@ impl Config {
         }
     }
 
-    fn make_leaf(&self, day: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
+    fn make_leaf_node(&self, day: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
         let data = self.leaf_data(r, iid0, alignment_charlen);
         day.children.push(Node::new(data.into()));
     }
 
-    fn make_day(&self, month: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
+    fn make_day_node(&self, month: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
         #[rustfmt::skip]
         let strs = &[
             "",
@@ -136,14 +136,14 @@ impl Config {
             "31st",
         ];
         let s = strs[r.date().day() as usize];
-        if !last_child_has_data(month, s) {
+        if !last_child_exists_and_has_expected_data(month, s) {
             month.children.push(Node::new(s.into()))
         }
         let day = last_child(month);
-        self.make_leaf(day, r, iid0, alignment_charlen);
+        self.make_leaf_node(day, r, iid0, alignment_charlen);
     }
 
-    fn make_month(&self, year: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
+    fn make_month_node(&self, year: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
         #[rustfmt::skip]
         let strs = &[
             "",
@@ -151,14 +151,14 @@ impl Config {
             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
         ];
         let s = strs[r.date().month() as usize];
-        if !last_child_has_data(year, s) {
+        if !last_child_exists_and_has_expected_data(year, s) {
             year.children.push(Node::new(s.into()))
         }
         let month = last_child(year);
-        self.make_day(month, r, iid0, alignment_charlen);
+        self.make_day_node(month, r, iid0, alignment_charlen);
     }
 
-    fn make_year(&self, root: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
+    fn make_year_node(&self, root: &mut Node, r: &Record, iid0: usize, alignment_charlen: usize) {
         let buf = [
             (r.date().year() / 1000) as u8 + b'0',
             (r.date().year() / 100 % 10) as u8 + b'0',
@@ -166,21 +166,22 @@ impl Config {
             (r.date().year() % 10) as u8 + b'0',
         ];
         let s = std::str::from_utf8(&buf).expect("all chars should be ascii");
-        if !last_child_has_data(root, s) {
+        if !last_child_exists_and_has_expected_data(root, s) {
             root.children.push(Node::new(s.to_string().into()))
         }
         let year = last_child(root);
-        self.make_month(year, r, iid0, alignment_charlen);
+        self.make_month_node(year, r, iid0, alignment_charlen);
     }
 }
 
-fn last_child_has_data(node: &Node, data: &str) -> bool {
+fn last_child_exists_and_has_expected_data(node: &Node, expected_data: &str) -> bool {
     match node.children.last() {
-        Some(child) => child.data == data,
+        Some(child) => child.data == expected_data,
         None => false,
     }
 }
 
+/// Panics if `node` does not have any children.
 fn last_child(node: &mut Node) -> &mut Node {
     node.children
         .last_mut()

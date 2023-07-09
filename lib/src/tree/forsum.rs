@@ -36,7 +36,7 @@ impl Config {
                 if a1 == a2 {
                     s1.cmp(s2)
                 } else {
-                    a2.0.abs().cmp(&a1.0.abs())
+                    a2.abs().cmp(&a1.abs())
                 }
             });
             v
@@ -65,9 +65,9 @@ impl Config {
             .unwrap_or_default();
 
         let mut root = Node::default();
-        self.add_vec(&mut root, posv, Self::IN, alignment_charlen);
-        self.add_vec(&mut root, negv, Self::OUT, alignment_charlen);
-        self.add_vec(&mut root, totv, Self::NET, alignment_charlen);
+        self.add_vec_to_tree(&mut root, posv, Self::IN, alignment_charlen);
+        self.add_vec_to_tree(&mut root, negv, Self::OUT, alignment_charlen);
+        self.add_vec_to_tree(&mut root, totv, Self::NET, alignment_charlen);
         Tree {
             charset: &self.charset,
             root,
@@ -90,7 +90,7 @@ impl Config {
         s
     }
 
-    fn add_vec(
+    fn add_vec_to_tree(
         &self,
         root: &mut Node,
         v: Vec<(&str, Cents)>,

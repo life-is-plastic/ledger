@@ -77,9 +77,9 @@ impl CentsArg {
             CentsArg::Signed(x) => x,
             CentsArg::Unsigned(x) => {
                 if unsigned_is_negative {
-                    (-x.0.abs()).into()
+                    -x.abs()
                 } else {
-                    x.0.abs().into()
+                    x.abs()
                 }
             }
         }
