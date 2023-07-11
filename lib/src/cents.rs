@@ -17,6 +17,8 @@ use crate::util;
     derive_more::Sum,
     derive_more::Add,
     derive_more::AddAssign,
+    derive_more::Sub,
+    derive_more::SubAssign,
     derive_more::Mul,
     derive_more::MulAssign,
     serde::Serialize,

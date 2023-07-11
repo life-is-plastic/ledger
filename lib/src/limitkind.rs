@@ -35,29 +35,29 @@ impl Limitkind {
         let contributions = rl
             .iter()
             .map(|r| match r.date().year() <= year && r.amount().0 > 0 {
-                true => r.amount().0,
-                false => 0,
+                true => r.amount(),
+                false => Cents(0),
             })
-            .sum::<i64>();
-        Cents(limits.inception_to_year(year) - contributions)
+            .sum();
+        limits.inception_to_year(year) - contributions
     }
 
     fn remaining_tfsa(limits: &Limits, rl: &Recordlist, year: u16) -> Cents {
         let contributions = rl
             .iter()
             .map(|r| match r.date().year() <= year && r.amount().0 > 0 {
-                true => r.amount().0,
-                false => 0,
+                true => r.amount(),
+                false => Cents(0),
             })
-            .sum::<i64>();
+            .sum();
         let withdrawals_before_year = rl
             .iter()
             .map(|r| match r.date().year() < year && r.amount().0 < 0 {
-                true => -r.amount().0,
-                false => 0,
+                true => -r.amount(),
+                false => Cents(0),
             })
-            .sum::<i64>();
-        Cents(limits.inception_to_year(year) - contributions + withdrawals_before_year)
+            .sum();
+        limits.inception_to_year(year) - contributions + withdrawals_before_year
     }
 }
 

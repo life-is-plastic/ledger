@@ -27,8 +27,7 @@ impl Config {
     pub fn to_limitprinter(&self) -> Limitprinter {
         let limits = self
             .limits
-            .iter()
-            .filter(|&(y, _)| y <= self.year)
+            .range(..=self.year)
             .map(|(year, limit)| (format!("{:0>4}", year), limit))
             .collect::<Vec<_>>();
 

@@ -1,3 +1,5 @@
+use std::iter::FusedIterator;
+
 use crate::Cents;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -24,18 +26,18 @@ impl Limits {
         self.0.remove(&year)
     }
 
-    /// Returns total accumulated yearly room up to and including `year`.
-    pub fn inception_to_year(&self, year: u16) -> i64 {
-        self.iter()
-            .map(|(y, room)| match y <= year {
-                true => room.0,
-                false => 0,
-            })
-            .sum()
+    /// See the method of the same name on [`std::collections::BTreeMap`].
+    pub fn range(
+        &self,
+        range: impl std::ops::RangeBounds<u16>,
+    ) -> impl DoubleEndedIterator<Item = (u16, Cents)> + FusedIterator<Item = (u16, Cents)> + '_
+    {
+        self.0.range(range).map(|(&k, &v)| (k, v))
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (u16, Cents)> + '_ {
-        self.0.iter().map(|(&k, &v)| (k, v))
+    /// Returns total accumulated yearly room up to and including `year`.
+    pub fn inception_to_year(&self, year: u16) -> Cents {
+        self.range(..=year).map(|(_, v)| v).sum()
     }
 }
 
@@ -99,9 +101,9 @@ mod tests {
             limits,
             Limits([(2015, Cents(1000)), (2016, Cents(0))].into())
         );
-        assert_eq!(limits.inception_to_year(2014), 0);
-        assert_eq!(limits.inception_to_year(2015), 1000);
-        assert_eq!(limits.inception_to_year(2016), 1000);
+        assert_eq!(limits.inception_to_year(2014), Cents(0));
+        assert_eq!(limits.inception_to_year(2015), Cents(1000));
+        assert_eq!(limits.inception_to_year(2016), Cents(1000));
 
         limits.set(2016, Cents(2000));
         limits.set(2014, Cents(3000));
@@ -116,21 +118,21 @@ mod tests {
                 .into()
             )
         );
-        assert_eq!(limits.inception_to_year(2013), 0);
-        assert_eq!(limits.inception_to_year(2014), 3000);
-        assert_eq!(limits.inception_to_year(2015), 4000);
-        assert_eq!(limits.inception_to_year(2016), 6000);
-        assert_eq!(limits.inception_to_year(2017), 6000);
+        assert_eq!(limits.inception_to_year(2013), Cents(0));
+        assert_eq!(limits.inception_to_year(2014), Cents(3000));
+        assert_eq!(limits.inception_to_year(2015), Cents(4000));
+        assert_eq!(limits.inception_to_year(2016), Cents(6000));
+        assert_eq!(limits.inception_to_year(2017), Cents(6000));
 
         limits.remove(2015);
         assert_eq!(
             limits,
             Limits([(2014, Cents(3000)), (2016, Cents(2000))].into())
         );
-        assert_eq!(limits.inception_to_year(2013), 0);
-        assert_eq!(limits.inception_to_year(2014), 3000);
-        assert_eq!(limits.inception_to_year(2015), 3000);
-        assert_eq!(limits.inception_to_year(2016), 5000);
-        assert_eq!(limits.inception_to_year(2017), 5000);
+        assert_eq!(limits.inception_to_year(2013), Cents(0));
+        assert_eq!(limits.inception_to_year(2014), Cents(3000));
+        assert_eq!(limits.inception_to_year(2015), Cents(3000));
+        assert_eq!(limits.inception_to_year(2016), Cents(5000));
+        assert_eq!(limits.inception_to_year(2017), Cents(5000));
     }
 }
