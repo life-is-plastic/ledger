@@ -3,6 +3,7 @@ use crate::Cents;
 use crate::Date;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Record {
     #[serde(rename = "d")]
     date: Date,
@@ -98,6 +99,7 @@ mod tests {
     #[case(r#"{"d":"2015-03-30","c":"","a":123456}"#)]
     #[case(r#"{"d":"2015-03-30","c":"/category","a":123456}"#)]
     #[case(r#"{"d":"2015-03-30","c":"category","a":1234.56}"#)]
+    #[case(r#"{"d":"2015-03-30","c":"category","a":123456,"unknown_field":""}"#)]
     fn test_deserialize_failing(#[case] s: &str) {
         assert!(s.parse::<Record>().is_err())
     }

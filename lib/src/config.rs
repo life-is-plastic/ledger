@@ -2,7 +2,7 @@ use crate::Limitkind;
 
 /// Application config.
 #[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase", default)]
+#[serde(rename_all = "camelCase", default, deny_unknown_fields)]
 pub struct Config {
     pub first_index_in_date: usize,
     pub lim_account_type: Option<Limitkind>,
