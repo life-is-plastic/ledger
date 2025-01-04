@@ -14,7 +14,7 @@ use crate::Recordlist;
     strum::Display,
     strum::AsRefStr,
     strum::IntoStaticStr,
-    strum::EnumVariantNames,
+    strum::VariantNames,
 )]
 #[serde(rename_all = "lowercase")]
 #[strum(ascii_case_insensitive, serialize_all = "lowercase")]

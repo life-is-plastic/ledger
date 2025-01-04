@@ -3,6 +3,7 @@ mod resultmatcher;
 mod state;
 
 pub use case::Case;
+pub use case::Invocation;
 pub use case::MutCase;
 pub use resultmatcher::ResultMatcher;
 pub use state::State;

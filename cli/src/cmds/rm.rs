@@ -96,16 +96,20 @@ mod tests {
         (
             nonexistent,
             testing::Case {
-                args: &["", "rm", "0000-01-01", "0", "--yes"],
-                matcher: testing::ResultMatcher::ErrGlob("nonexistent transaction"),
+                invocations: &[testing::Invocation {
+                    args: &["", "rm", "0000-01-01", "0", "--yes"],
+                    res: testing::ResultMatcher::ErrGlob("nonexistent transaction"),
+                }],
                 initial_state: testing::StrState::new().with_config("{}"),
             }
         ),
         (
             bad_index,
             testing::Case {
-                args: &["", "rm", "0000-01-01", "4"],
-                matcher: testing::ResultMatcher::ErrGlob("nonexistent transaction"),
+                invocations: &[testing::Invocation {
+                    args: &["", "rm", "0000-01-01", "4"],
+                    res: testing::ResultMatcher::ErrGlob("nonexistent transaction"),
+                }],
                 initial_state: testing::StrState::new().with_config("{}").with_rl(
                     r#"
                         {"d":"0000-01-01","c":"abc","a":111}
@@ -117,20 +121,22 @@ mod tests {
         (
             dry_run,
             testing::Case {
-                args: &["", "rm", "0000-01-01", "1"],
-                matcher: testing::ResultMatcher::OkExact(Output::TreeForView(
-                    lib::tree::forview::Config {
-                        charset: Default::default(),
-                        first_iid: 0,
-                        rl: r#"
-                            {"d":"0000-01-01","c":"abc","a":111}
-                            {"d":"0000-01-01","c":"def","a":111,"n":"note"}
-                        "#
-                        .parse()
-                        .unwrap(),
-                        leaf_string_postprocessor: Some(dummy_lspp()),
-                    }
-                )),
+                invocations: &[testing::Invocation {
+                    args: &["", "rm", "0000-01-01", "1"],
+                    res: testing::ResultMatcher::OkExact(Output::TreeForView(
+                        lib::tree::forview::Config {
+                            charset: Default::default(),
+                            first_iid: 0,
+                            rl: r#"
+                                {"d":"0000-01-01","c":"abc","a":111}
+                                {"d":"0000-01-01","c":"def","a":111,"n":"note"}
+                            "#
+                            .parse()
+                            .unwrap(),
+                            leaf_string_postprocessor: Some(dummy_lspp()),
+                        }
+                    )),
+                }],
                 initial_state: testing::StrState::new().with_config("{}").with_rl(
                     r#"
                         {"d":"0000-01-01","c":"abc","a":111}
@@ -142,20 +148,22 @@ mod tests {
         (
             wet_run,
             testing::MutCase {
-                args: &["", "rm", "0000-01-01", "1", "--yes"],
-                matcher: testing::ResultMatcher::OkExact(Output::TreeForView(
-                    lib::tree::forview::Config {
-                        charset: Default::default(),
-                        first_iid: 0,
-                        rl: r#"
-                            {"d":"0000-01-01","c":"abc","a":111}
-                            {"d":"0000-01-01","c":"def","a":111,"n":"note"}
-                        "#
-                        .parse()
-                        .unwrap(),
-                        leaf_string_postprocessor: Some(dummy_lspp()),
-                    }
-                )),
+                invocations: &[testing::Invocation {
+                    args: &["", "rm", "0000-01-01", "1", "--yes"],
+                    res: testing::ResultMatcher::OkExact(Output::TreeForView(
+                        lib::tree::forview::Config {
+                            charset: Default::default(),
+                            first_iid: 0,
+                            rl: r#"
+                                {"d":"0000-01-01","c":"abc","a":111}
+                                {"d":"0000-01-01","c":"def","a":111,"n":"note"}
+                            "#
+                            .parse()
+                            .unwrap(),
+                            leaf_string_postprocessor: Some(dummy_lspp()),
+                        }
+                    )),
+                }],
                 initial_state: testing::StrState::new().with_config("{}").with_rl(
                     r#"
                         {"d":"0000-01-01","c":"abc","a":111}

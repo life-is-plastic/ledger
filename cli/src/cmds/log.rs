@@ -26,6 +26,10 @@ pub struct Log {
     /// Optional comments about transaction
     #[arg(short, long, default_value_t, hide_default_value = true)]
     note: String,
+
+    /// Allow logging the entry if its category does not already exist
+    #[arg(short, long)]
+    create: bool,
 }
 
 impl Log {
@@ -35,6 +39,10 @@ impl Log {
         config: &lib::Config,
         fs: &lib::Fs,
     ) -> anyhow::Result<Output> {
+        if !self.create && !rl.iter().any(|r| r.category() == &self.category) {
+            anyhow::bail!("nonexistent category")
+        }
+
         let r = lib::Record::new(
             self.date,
             self.category,
@@ -125,39 +133,112 @@ mod tests {
 
     testing::generate_testcases![
         (
+            nonexistent_category,
+            testing::Case {
+                invocations: &[testing::Invocation {
+                    args: &["", "log", "aaa", "-1.23", "2015-03-30"],
+                    res: testing::ResultMatcher::ErrGlob("nonexistent category"),
+                }],
+                initial_state: testing::StrState::new().with_config("{}"),
+            }
+        ),
+        (
             normal_execution,
             testing::MutCase {
-                args: &["", "log", "aaa", "-1.23", "2015-03-30", "--note", "qwerty"],
-                matcher: testing::ResultMatcher::OkExact(Output::TreeForView(
-                    lib::tree::forview::Config {
-                        charset: Default::default(),
-                        first_iid: 0,
-                        rl: r#"{"d":"2015-03-30","c":"aaa","a":-123,"n":"qwerty"}"#
-                            .parse()
-                            .unwrap(),
-                        leaf_string_postprocessor: None,
-                    }
-                )),
+                invocations: &[
+                    testing::Invocation {
+                        args: &[
+                            "",
+                            "log",
+                            "aaa",
+                            "-1.23",
+                            "2015-03-30",
+                            "--note",
+                            "qwerty",
+                            "--create",
+                        ],
+                        res: testing::ResultMatcher::OkExact(Output::TreeForView(
+                            lib::tree::forview::Config {
+                                charset: Default::default(),
+                                first_iid: 0,
+                                rl: r#"{"d":"2015-03-30","c":"aaa","a":-123,"n":"qwerty"}"#
+                                    .parse()
+                                    .unwrap(),
+                                leaf_string_postprocessor: None,
+                            }
+                        )),
+                    },
+                    testing::Invocation {
+                        args: &[
+                            "",
+                            "log",
+                            "aaa",
+                            "4.56",
+                            "2015-03-30",
+                            "--note",
+                            "qwerty",
+                            "--create"
+                        ],
+                        res: testing::ResultMatcher::OkExact(Output::TreeForView(
+                            lib::tree::forview::Config {
+                                charset: Default::default(),
+                                first_iid: 0,
+                                rl: r#"
+                                    {"d":"2015-03-30","c":"aaa","a":-123,"n":"qwerty"}
+                                    {"d":"2015-03-30","c":"aaa","a":456,"n":"qwerty"}
+                                "#
+                                .parse()
+                                .unwrap(),
+                                leaf_string_postprocessor: None,
+                            }
+                        )),
+                    },
+                    testing::Invocation {
+                        args: &["", "log", "aaa", "789", "2015-03-30", "--note", "qwerty"],
+                        res: testing::ResultMatcher::OkExact(Output::TreeForView(
+                            lib::tree::forview::Config {
+                                charset: Default::default(),
+                                first_iid: 0,
+                                rl: r#"
+                                    {"d":"2015-03-30","c":"aaa","a":-123,"n":"qwerty"}
+                                    {"d":"2015-03-30","c":"aaa","a":456,"n":"qwerty"}
+                                    {"d":"2015-03-30","c":"aaa","a":78900,"n":"qwerty"}
+                                "#
+                                .parse()
+                                .unwrap(),
+                                leaf_string_postprocessor: None,
+                            }
+                        )),
+                    },
+                ],
                 initial_state: testing::StrState::new().with_config("{}"),
                 final_state: testing::State::new()
                     .with_config(lib::Config::default())
-                    .with_rl(r#"{"d":"2015-03-30","c":"aaa","a":-123,"n":"qwerty"}"#),
+                    .with_rl(
+                        r#"
+                            {"d":"2015-03-30","c":"aaa","a":-123,"n":"qwerty"}
+                            {"d":"2015-03-30","c":"aaa","a":456,"n":"qwerty"}
+                            {"d":"2015-03-30","c":"aaa","a":78900,"n":"qwerty"}
+                        "#
+                    ),
             }
         ),
         (
             unsigned_positive,
             testing::MutCase {
-                args: &["", "log", "aaa", "1.23"],
-                matcher: testing::ResultMatcher::OkExact(Output::TreeForView(
-                    lib::tree::forview::Config {
-                        charset: Default::default(),
-                        first_iid: 0,
-                        rl: format!(r#"{{"d":"{}","c":"aaa","a":123}}"#, lib::Date::today())
-                            .parse()
-                            .unwrap(),
-                        leaf_string_postprocessor: None,
-                    }
-                )),
+                invocations: &[testing::Invocation {
+                    args: &["", "log", "aaa", "1.23", "--create"],
+                    res: testing::ResultMatcher::OkExact(Output::TreeForView(
+                        lib::tree::forview::Config {
+                            charset: Default::default(),
+                            first_iid: 0,
+                            rl: format!(r#"{{"d":"{}","c":"aaa","a":123}}"#, lib::Date::today())
+                                .parse()
+                                .unwrap(),
+                            leaf_string_postprocessor: None,
+                        }
+                    )),
+                }],
                 initial_state: testing::StrState::new()
                     .with_config(r#"{"unsignedIsNegative":false}"#),
                 final_state: testing::State::new()
@@ -170,17 +251,19 @@ mod tests {
         (
             unsigned_negative,
             testing::MutCase {
-                args: &["", "log", "aaa", "1.23"],
-                matcher: testing::ResultMatcher::OkExact(Output::TreeForView(
-                    lib::tree::forview::Config {
-                        charset: Default::default(),
-                        first_iid: 0,
-                        rl: format!(r#"{{"d":"{}","c":"aaa","a":-123}}"#, lib::Date::today())
-                            .parse()
-                            .unwrap(),
-                        leaf_string_postprocessor: None,
-                    }
-                )),
+                invocations: &[testing::Invocation {
+                    args: &["", "log", "aaa", "1.23", "--create"],
+                    res: testing::ResultMatcher::OkExact(Output::TreeForView(
+                        lib::tree::forview::Config {
+                            charset: Default::default(),
+                            first_iid: 0,
+                            rl: format!(r#"{{"d":"{}","c":"aaa","a":-123}}"#, lib::Date::today())
+                                .parse()
+                                .unwrap(),
+                            leaf_string_postprocessor: None,
+                        }
+                    )),
+                }],
                 initial_state: testing::StrState::new()
                     .with_config(r#"{"unsignedIsNegative":true}"#),
                 final_state: testing::State::new()

@@ -57,8 +57,10 @@ mod tests {
         (
             empty_repo,
             testing::MutCase {
-                args: &["", "init"],
-                matcher: testing::ResultMatcher::OkStrGlob("repository initialized in*"),
+                invocations: &[testing::Invocation {
+                    args: &["", "init"],
+                    res: testing::ResultMatcher::OkStrGlob("repository initialized in*"),
+                }],
                 initial_state: testing::StrState::new(),
                 final_state: testing::State::new().with_config(initial_config()),
             }
@@ -66,8 +68,10 @@ mod tests {
         (
             empty_repo_reset_config,
             testing::MutCase {
-                args: &["", "init", "--reset-config"],
-                matcher: testing::ResultMatcher::OkStrGlob("repository initialized in*"),
+                invocations: &[testing::Invocation {
+                    args: &["", "init", "--reset-config"],
+                    res: testing::ResultMatcher::OkStrGlob("repository initialized in*"),
+                }],
                 initial_state: testing::StrState::new(),
                 final_state: testing::State::new().with_config(initial_config()),
             }
@@ -75,8 +79,10 @@ mod tests {
         (
             existing_repo,
             testing::Case {
-                args: &["", "init"],
-                matcher: testing::ResultMatcher::OkStrGlob("repository reinitialized in*"),
+                invocations: &[testing::Invocation {
+                    args: &["", "init"],
+                    res: testing::ResultMatcher::OkStrGlob("repository reinitialized in*"),
+                }],
                 initial_state: testing::StrState::new()
                     .with_config(r#"{"firstIndexInDate":4,"useColoredOutput":true}"#),
             }
@@ -84,10 +90,12 @@ mod tests {
         (
             existing_repo_reset_config,
             testing::MutCase {
-                args: &["", "init", "--reset-config"],
-                matcher: testing::ResultMatcher::OkStrGlob(
-                    "repository configuration reset to defaults."
-                ),
+                invocations: &[testing::Invocation {
+                    args: &["", "init", "--reset-config"],
+                    res: testing::ResultMatcher::OkStrGlob(
+                        "repository configuration reset to defaults."
+                    ),
+                }],
                 initial_state: testing::StrState::new()
                     .with_config(r#"{"firstIndexInDate":4,"useColoredOutput":true}"#),
                 final_state: testing::State::new().with_config(initial_config()),

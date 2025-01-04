@@ -1,15 +1,15 @@
 [package]
 name = "ledger"
-version = "1.0.5"
+version = "1.0.6"
 edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [profile.release]
-codegen-units = 1
-lto = true
-opt-level = "z"
-panic = "abort"
-strip = true
+codegen-units = 1 # Slower compile, faster code
+lto = true        # Enable link time optimizations to produce faster code
+opt-level = "z"   # Optimize for binary size
+panic = "abort"   # Smaller binary size than "unwind"
+strip = "symbols" # Remove debug symbols to reduce binary size
 
 [workspace]
 members = ["cli", "lib"]

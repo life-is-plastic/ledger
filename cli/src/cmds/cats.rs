@@ -34,16 +34,20 @@ mod tests {
         (
             no_cats1,
             testing::Case {
-                args: &["", "cats"],
-                matcher: testing::ResultMatcher::OkStrGlob("no categories."),
+                invocations: &[testing::Invocation {
+                    args: &["", "cats"],
+                    res: testing::ResultMatcher::OkStrGlob("no categories."),
+                }],
                 initial_state: testing::StrState::new().with_config("{}"),
             }
         ),
         (
             no_cats2,
             testing::Case {
-                args: &["", "cats", "ddd"],
-                matcher: testing::ResultMatcher::OkStrGlob("no categories."),
+                invocations: &[testing::Invocation {
+                    args: &["", "cats", "ddd"],
+                    res: testing::ResultMatcher::OkStrGlob("no categories."),
+                }],
                 initial_state: testing::StrState::new().with_config("{}").with_rl(
                     r#"
                         {"d":"2014-01-01","c":"ccc","a":100}
@@ -56,8 +60,10 @@ mod tests {
         (
             normal_execution,
             testing::Case {
-                args: &["", "cats", "bbb", "aaa"],
-                matcher: testing::ResultMatcher::OkStrGlob("aaa\nbbb"),
+                invocations: &[testing::Invocation {
+                    args: &["", "cats", "bbb", "aaa"],
+                    res: testing::ResultMatcher::OkStrGlob("aaa\nbbb"),
+                }],
                 initial_state: testing::StrState::new().with_config("{}").with_rl(
                     r#"
                         {"d":"2014-01-01","c":"ccc","a":100}

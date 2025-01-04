@@ -101,7 +101,7 @@ mod tests {
     #[rstest]
     #[case(
         2015,
-        "rrsp",
+        Limitkind::Rrsp,
         "{}",
         "",
         indoc!("
@@ -111,7 +111,7 @@ mod tests {
     )]
     #[case(
         2015,
-        "rrsp",
+        Limitkind::Rrsp,
         "{}",
         r#"{"d":"2015-03-30","c":"aaa","a":100000}"#,
         indoc!("
@@ -121,7 +121,7 @@ mod tests {
     )]
     #[case(
         2015,
-        "tfsa",
+        Limitkind::Tfsa,
         "{}",
         r#"{"d":"2014-03-30","c":"aaa","a":-100000}"#,
         indoc!("
@@ -131,7 +131,7 @@ mod tests {
     )]
     #[case(
         2015,
-        "rrsp",
+        Limitkind::Rrsp,
         r#"{
             "40": 100000,
             "2013": 200000,

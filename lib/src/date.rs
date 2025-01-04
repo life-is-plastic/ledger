@@ -20,13 +20,12 @@ pub struct Date(time::Date);
 
 impl Date {
     /// 0000-01-01
-    pub const MIN: Self = Self(time::Date::__from_ordinal_date_unchecked(0, 1));
+    pub const MIN: Self = Self(unsafe { time::Date::__from_ordinal_date_unchecked(0, 1) });
 
     /// 9999-12-31
-    pub const MAX: Self = Self(time::Date::__from_ordinal_date_unchecked(
-        9999,
-        time::util::days_in_year(9999),
-    ));
+    pub const MAX: Self = Self(unsafe {
+        time::Date::__from_ordinal_date_unchecked(9999, time::util::days_in_year(9999))
+    });
 
     pub const fn year(self) -> u16 {
         self.0.year() as u16
@@ -99,7 +98,7 @@ impl Date {
             Datepart::Month => Self::from_ymd_unchecked(
                 self.year(),
                 self.month(),
-                time::util::days_in_year_month(self.0.year(), self.0.month()) as u16,
+                self.0.month().length(self.0.year()).into(),
             ),
             Datepart::Year => Self::from_ymd_unchecked(self.year(), 12, 31),
         }
@@ -138,7 +137,7 @@ impl Date {
                 )
             }
         };
-        let d = time::util::days_in_year_month(y, m).min(self.0.day()) as u16;
+        let d = u16::from(m.length(y).min(self.0.day()));
         let y = u16::try_from(y).ok()?;
         let m = m as u16;
         Self::from_ymd(y, m, d)
@@ -236,56 +235,56 @@ mod tests {
     }
 
     #[rstest]
-    #[case("2015-03-30", "year", "2015-01-01")]
-    #[case("2015-03-30", "month", "2015-03-01")]
-    #[case("2015-03-30", "day", "2015-03-30")]
+    #[case("2015-03-30", Datepart::Year, "2015-01-01")]
+    #[case("2015-03-30", Datepart::Month, "2015-03-01")]
+    #[case("2015-03-30", Datepart::Day, "2015-03-30")]
     fn test_first_of(#[case] dt: Date, #[case] part: Datepart, #[case] want: Date) {
         assert_eq!(dt.first_of(part), want)
     }
 
     #[rstest]
-    #[case("2015-03-30", "year", "2015-12-31")]
-    #[case("2015-03-30", "month", "2015-03-31")]
-    #[case("2015-03-30", "day", "2015-03-30")]
-    #[case("1700-02-15", "month", "1700-02-28")]
-    #[case("1704-02-15", "month", "1704-02-29")]
-    #[case("2000-02-15", "month", "2000-02-29")]
-    #[case("2001-02-15", "month", "2001-02-28")]
-    #[case("3000-01-15", "month", "3000-01-31")]
-    #[case("3000-03-15", "month", "3000-03-31")]
-    #[case("3000-04-15", "month", "3000-04-30")]
-    #[case("3000-05-15", "month", "3000-05-31")]
-    #[case("3000-06-15", "month", "3000-06-30")]
-    #[case("3000-07-15", "month", "3000-07-31")]
-    #[case("3000-08-15", "month", "3000-08-31")]
-    #[case("3000-09-15", "month", "3000-09-30")]
-    #[case("3000-10-15", "month", "3000-10-31")]
-    #[case("3000-11-15", "month", "3000-11-30")]
-    #[case("3000-12-15", "month", "3000-12-31")]
+    #[case("2015-03-30", Datepart::Year, "2015-12-31")]
+    #[case("2015-03-30", Datepart::Month, "2015-03-31")]
+    #[case("2015-03-30", Datepart::Day, "2015-03-30")]
+    #[case("1700-02-15", Datepart::Month, "1700-02-28")]
+    #[case("1704-02-15", Datepart::Month, "1704-02-29")]
+    #[case("2000-02-15", Datepart::Month, "2000-02-29")]
+    #[case("2001-02-15", Datepart::Month, "2001-02-28")]
+    #[case("3000-01-15", Datepart::Month, "3000-01-31")]
+    #[case("3000-03-15", Datepart::Month, "3000-03-31")]
+    #[case("3000-04-15", Datepart::Month, "3000-04-30")]
+    #[case("3000-05-15", Datepart::Month, "3000-05-31")]
+    #[case("3000-06-15", Datepart::Month, "3000-06-30")]
+    #[case("3000-07-15", Datepart::Month, "3000-07-31")]
+    #[case("3000-08-15", Datepart::Month, "3000-08-31")]
+    #[case("3000-09-15", Datepart::Month, "3000-09-30")]
+    #[case("3000-10-15", Datepart::Month, "3000-10-31")]
+    #[case("3000-11-15", Datepart::Month, "3000-11-30")]
+    #[case("3000-12-15", Datepart::Month, "3000-12-31")]
     fn test_last_of(#[case] dt: Date, #[case] part: Datepart, #[case] want: Date) {
         assert_eq!(dt.last_of(part), want)
     }
 
     #[rstest]
-    #[case("2015-03-30", "year", 0, Date::from_ymd(2015, 3, 30))]
-    #[case("2015-03-30", "year", 1, Date::from_ymd(2016, 3, 30))]
-    #[case("2015-03-30", "year", -1, Date::from_ymd(2014, 3, 30))]
-    #[case("2015-03-30", "year", 30, Date::from_ymd(2045, 3, 30))]
-    #[case("2015-03-30", "year", i32::MAX, None)]
-    #[case("2015-03-30", "month", 0, Date::from_ymd(2015, 3, 30))]
-    #[case("2015-03-30", "month", 1, Date::from_ymd(2015, 4, 30))]
-    #[case("2015-03-30", "month", -1, Date::from_ymd(2015, 2, 28))]
-    #[case("2015-03-30", "month", 27, Date::from_ymd(2017, 6, 30))]
-    #[case("2015-03-30", "month", -27, Date::from_ymd(2012, 12, 30))]
-    #[case("2015-03-30", "day", 0, Date::from_ymd(2015, 3, 30))]
-    #[case("2015-03-30", "day", 1, Date::from_ymd(2015, 3, 31))]
-    #[case("2015-03-30", "day", -1, Date::from_ymd(2015, 3, 29))]
-    #[case("2015-03-30", "day", 100, Date::from_ymd(2015, 7, 8))]
-    #[case("2015-03-30", "day", -100, Date::from_ymd(2014, 12, 20))]
-    #[case("0000-01-01", "day", -1, None)]
-    #[case("0002-01-01", "month", -27, None)]
-    #[case("0002-01-01", "year", -4, None)]
-    #[case("9999-12-31", "day", 1, None)]
+    #[case("2015-03-30", Datepart::Year, 0, Date::from_ymd(2015, 3, 30))]
+    #[case("2015-03-30", Datepart::Year, 1, Date::from_ymd(2016, 3, 30))]
+    #[case("2015-03-30", Datepart::Year, -1, Date::from_ymd(2014, 3, 30))]
+    #[case("2015-03-30", Datepart::Year, 30, Date::from_ymd(2045, 3, 30))]
+    #[case("2015-03-30", Datepart::Year, i32::MAX, None)]
+    #[case("2015-03-30", Datepart::Month, 0, Date::from_ymd(2015, 3, 30))]
+    #[case("2015-03-30", Datepart::Month, 1, Date::from_ymd(2015, 4, 30))]
+    #[case("2015-03-30", Datepart::Month, -1, Date::from_ymd(2015, 2, 28))]
+    #[case("2015-03-30", Datepart::Month, 27, Date::from_ymd(2017, 6, 30))]
+    #[case("2015-03-30", Datepart::Month, -27, Date::from_ymd(2012, 12, 30))]
+    #[case("2015-03-30", Datepart::Day, 0, Date::from_ymd(2015, 3, 30))]
+    #[case("2015-03-30", Datepart::Day, 1, Date::from_ymd(2015, 3, 31))]
+    #[case("2015-03-30", Datepart::Day, -1, Date::from_ymd(2015, 3, 29))]
+    #[case("2015-03-30", Datepart::Day, 100, Date::from_ymd(2015, 7, 8))]
+    #[case("2015-03-30", Datepart::Day, -100, Date::from_ymd(2014, 12, 20))]
+    #[case("0000-01-01", Datepart::Day, -1, None)]
+    #[case("0002-01-01", Datepart::Month, -27, None)]
+    #[case("0002-01-01", Datepart::Year, -4, None)]
+    #[case("9999-12-31", Datepart::Day, 1, None)]
     fn test_shift(
         #[case] dt: Date,
         #[case] part: Datepart,

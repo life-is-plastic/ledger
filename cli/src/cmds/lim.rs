@@ -149,16 +149,20 @@ mod tests {
         (
             remove_nonexistent,
             testing::Case {
-                args: &["", "lim", "2015", "--set", "0"],
-                matcher: testing::ResultMatcher::OkStrGlob("2015 has no limit."),
+                invocations: &[testing::Invocation {
+                    args: &["", "lim", "2015", "--set", "0"],
+                    res: testing::ResultMatcher::OkStrGlob("2015 has no limit."),
+                }],
                 initial_state: testing::StrState::new().with_config("{}"),
             }
         ),
         (
             remove,
             testing::MutCase {
-                args: &["", "lim", "2015", "--set", "0"],
-                matcher: testing::ResultMatcher::OkStrGlob("2015 limit removed."),
+                invocations: &[testing::Invocation {
+                    args: &["", "lim", "2015", "--set", "0"],
+                    res: testing::ResultMatcher::OkStrGlob("2015 limit removed."),
+                }],
                 initial_state: testing::StrState::new()
                     .with_config("{}")
                     .with_limits(r#"{"2015":1}"#),
@@ -170,8 +174,10 @@ mod tests {
         (
             set,
             testing::MutCase {
-                args: &["", "lim", "2016", "--set=-1.23"],
-                matcher: testing::ResultMatcher::OkStrGlob("2016 limit set to (1.23)"),
+                invocations: &[testing::Invocation {
+                    args: &["", "lim", "2016", "--set=-1.23"],
+                    res: testing::ResultMatcher::OkStrGlob("2016 limit set to (1.23)"),
+                }],
                 initial_state: testing::StrState::new()
                     .with_config("{}")
                     .with_limits(r#"{"2015":1}"#),
@@ -183,26 +189,28 @@ mod tests {
         (
             view_explicit_limitkind,
             testing::Case {
-                args: &["", "lim", "2015", "--view", "tfsa"],
-                matcher: testing::ResultMatcher::OkExact(Output::Limitprinter(
-                    lib::limitprinter::Config {
-                        charset: Default::default(),
-                        year: 2015,
-                        kind: lib::Limitkind::Tfsa,
-                        limits: r#"{
-                            "2014": 100,
-                            "2015": 100
-                        }"#
-                        .parse()
-                        .unwrap(),
-                        rl: r#"
-                            {"d":"2014-01-01","c":"aaa","a":100}
-                            {"d":"2015-01-01","c":"aaa","a":100}
-                        "#
-                        .parse()
-                        .unwrap(),
-                    }
-                )),
+                invocations: &[testing::Invocation {
+                    args: &["", "lim", "2015", "--view", "tfsa"],
+                    res: testing::ResultMatcher::OkExact(Output::Limitprinter(
+                        lib::limitprinter::Config {
+                            charset: Default::default(),
+                            year: 2015,
+                            kind: lib::Limitkind::Tfsa,
+                            limits: r#"{
+                                "2014": 100,
+                                "2015": 100
+                            }"#
+                            .parse()
+                            .unwrap(),
+                            rl: r#"
+                                {"d":"2014-01-01","c":"aaa","a":100}
+                                {"d":"2015-01-01","c":"aaa","a":100}
+                            "#
+                            .parse()
+                            .unwrap(),
+                        }
+                    )),
+                }],
                 initial_state: testing::StrState::default()
                     .with_config("{}")
                     .with_limits(
@@ -222,26 +230,28 @@ mod tests {
         (
             view_implicit_limitkind,
             testing::Case {
-                args: &["", "lim"],
-                matcher: testing::ResultMatcher::OkExact(Output::Limitprinter(
-                    lib::limitprinter::Config {
-                        charset: Default::default(),
-                        year: lib::Date::today().year(),
-                        kind: lib::Limitkind::Tfsa,
-                        limits: r#"{
-                            "2014": 100,
-                            "2015": 100
-                        }"#
-                        .parse()
-                        .unwrap(),
-                        rl: r#"
-                            {"d":"2014-01-01","c":"aaa","a":100}
-                            {"d":"2015-01-01","c":"aaa","a":100}
-                        "#
-                        .parse()
-                        .unwrap(),
-                    }
-                )),
+                invocations: &[testing::Invocation {
+                    args: &["", "lim"],
+                    res: testing::ResultMatcher::OkExact(Output::Limitprinter(
+                        lib::limitprinter::Config {
+                            charset: Default::default(),
+                            year: lib::Date::today().year(),
+                            kind: lib::Limitkind::Tfsa,
+                            limits: r#"{
+                                "2014": 100,
+                                "2015": 100
+                            }"#
+                            .parse()
+                            .unwrap(),
+                            rl: r#"
+                                {"d":"2014-01-01","c":"aaa","a":100}
+                                {"d":"2015-01-01","c":"aaa","a":100}
+                            "#
+                            .parse()
+                            .unwrap(),
+                        }
+                    )),
+                }],
                 initial_state: testing::StrState::new()
                     .with_config(r#"{"limAccountType":"tfsa"}"#)
                     .with_limits(
@@ -261,8 +271,10 @@ mod tests {
         (
             view_implicit_limitkind_without_one_being_configured,
             testing::Case {
-                args: &["", "lim"],
-                matcher: testing::ResultMatcher::ErrGlob("no default account type configured"),
+                invocations: &[testing::Invocation {
+                    args: &["", "lim"],
+                    res: testing::ResultMatcher::ErrGlob("no default account type configured"),
+                }],
                 initial_state: testing::StrState::new().with_config("{}"),
             }
         ),
