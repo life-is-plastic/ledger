@@ -9,7 +9,7 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum Output {
     Str(String),
-    TreeForSum(lib::tree::forsum::Config),
+    TreeForSum(lib::tree::forsum::Config, lib::Interval),
     TreeForView(lib::tree::forview::Config),
     Barchart(lib::barchart::Config),
     Limitprinter(lib::limitprinter::Config),
@@ -25,7 +25,7 @@ impl std::fmt::Display for Output {
                     writeln!(f, "{}", s)
                 }
             }
-            Output::TreeForSum(config) => write!(f, "{}", config.to_tree()),
+            Output::TreeForSum(config, interval) => writeln!(f, "{}{}", config.to_tree(), interval),
             Output::TreeForView(config) => {
                 if config.rl.is_empty() {
                     writeln!(f, "No transactions.")

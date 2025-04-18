@@ -40,6 +40,6 @@ impl Sum {
             level: self.level,
             rl,
         };
-        Ok(Output::TreeForSum(tr_config))
+        Ok(Output::TreeForSum(tr_config, self.interval))
     }
 }
