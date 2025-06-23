@@ -133,7 +133,8 @@ mod tests {
                   "limAccountType": null,
                   "unsignedIsNegative": true,
                   "useColoredOutput": false,
-                  "useUnicodeSymbols": false
+                  "useUnicodeSymbols": false,
+                  "templates": {}
                 }
                 "#
             )

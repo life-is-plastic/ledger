@@ -4,3 +4,4 @@
 ledger.jsonl
 limits.json
 build.ps1
+build.sh

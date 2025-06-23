@@ -2,6 +2,7 @@ mod cats;
 mod init;
 mod lim;
 mod log;
+mod logt;
 mod plot;
 mod rm;
 mod sum;
@@ -22,6 +23,7 @@ pub struct Root {
 enum Commands {
     Init(init::Init),
     Log(log::Log),
+    Logt(logt::Logt),
     Rm(rm::Rm),
     View(view::View),
     Cats(cats::Cats),
@@ -52,6 +54,7 @@ impl Root {
         match self.command {
             Commands::Init(_) => unreachable!(),
             Commands::Log(cmd) => cmd.run(rl, &config, fs),
+            Commands::Logt(cmd) => cmd.run(rl, &config, fs),
             Commands::Rm(cmd) => cmd.run(rl, &config, fs),
             Commands::View(cmd) => cmd.run(rl, &config),
             Commands::Cats(cmd) => cmd.run(rl),

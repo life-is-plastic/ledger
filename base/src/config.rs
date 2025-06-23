@@ -1,3 +1,5 @@
+use crate::category::Category;
+use crate::cents::Cents;
 use crate::limitkind::Limitkind;
 
 /// Application config.
@@ -9,6 +11,14 @@ pub struct Config {
     pub unsigned_is_negative: bool,
     pub use_colored_output: bool,
     pub use_unicode_symbols: bool,
+    pub templates: std::collections::HashMap<String, Vec<TemplateEntry>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TemplateEntry {
+    pub category: Category,
+    pub amount: Cents,
 }
 
 impl std::fmt::Display for Config {
