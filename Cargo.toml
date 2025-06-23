@@ -12,7 +12,7 @@ panic = "abort"   # Smaller binary size than "unwind"
 strip = "symbols" # Remove debug symbols to reduce binary size
 
 [workspace]
-members = ["cli", "lib"]
+members = ["base", "cli"]
 
 [dependencies]
 cli = { path = "cli" }

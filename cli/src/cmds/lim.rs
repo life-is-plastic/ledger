@@ -22,15 +22,15 @@ pub struct Lim {
 struct Opts {
     /// Set the contribution limit for YEAR
     #[arg(short, long, value_name = "AMOUNT", allow_negative_numbers = true)]
-    set: Option<lib::Cents>,
+    set: Option<base::Cents>,
 
     /// View total and remaining limits for YEAR
     #[arg(long, value_name = "ACCOUNT_TYPE")]
     #[arg(value_parser(
-        clap::builder::PossibleValuesParser::new(<lib::Limitkind as strum::VariantNames>::VARIANTS)
-            .map(|s| s.parse::<lib::Limitkind>().expect("should be parseable"))
+        clap::builder::PossibleValuesParser::new(<base::Limitkind as strum::VariantNames>::VARIANTS)
+            .map(|s| s.parse::<base::Limitkind>().expect("should be parseable"))
     ))]
-    view: Option<lib::Limitkind>,
+    view: Option<base::Limitkind>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,7 +41,7 @@ impl std::str::FromStr for YearArg {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s == "y" || s == "Y" {
-            return Ok(YearArg(lib::Date::today().year()));
+            return Ok(YearArg(base::Date::today().year()));
         }
         let year = if s.is_empty() || ![b'y', b'Y'].contains(&s.as_bytes()[0]) {
             s.parse()?
@@ -49,7 +49,7 @@ impl std::str::FromStr for YearArg {
             let offset = std::str::from_utf8(&s.as_bytes()[1..])
                 .expect("remaining bytes should form a valid string")
                 .parse::<i32>()?;
-            (lib::Date::today().year() as i32)
+            (base::Date::today().year() as i32)
                 .checked_add(offset)
                 .unwrap_or(-1)
         };
@@ -63,14 +63,14 @@ impl std::str::FromStr for YearArg {
 impl Lim {
     pub fn run(
         self,
-        rl: lib::Recordlist,
-        config: &lib::Config,
-        fs: &lib::Fs,
+        rl: base::Recordlist,
+        config: &base::Config,
+        fs: &base::Fs,
     ) -> anyhow::Result<Output> {
         let year = self.year.0;
         let limits = fs
-            .read::<lib::Limits>()
-            .with_context(|| format!("failed to read '{}'", fs.path::<lib::Limits>().display()))?;
+            .read::<base::Limits>()
+            .with_context(|| format!("failed to read '{}'", fs.path::<base::Limits>().display()))?;
 
         if let Some(amount) = self.opts.set {
             return update_limits(limits, year, amount, fs);
@@ -79,7 +79,7 @@ impl Lim {
         let Some(kind) = self.opts.view.or(config.lim_account_type) else {
             anyhow::bail!("no default account type configured")
         };
-        let printer_config = lib::limitprinter::Config {
+        let printer_config = base::limitprinter::Config {
             charset: util::charset_from_config(config),
             year,
             kind,
@@ -91,14 +91,14 @@ impl Lim {
 }
 
 fn update_limits(
-    mut limits: lib::Limits,
+    mut limits: base::Limits,
     year: u16,
-    amount: lib::Cents,
-    fs: &lib::Fs,
+    amount: base::Cents,
+    fs: &base::Fs,
 ) -> anyhow::Result<Output> {
     let output: String;
     let mut updated = true;
-    if amount != lib::Cents(0) {
+    if amount != base::Cents(0) {
         limits.set(year, amount);
         output = format!("{} limit set to {}", year, amount);
     } else if limits.remove(year).is_some() {
@@ -109,8 +109,9 @@ fn update_limits(
         output = format!("{} has no limit.", year);
     };
     if updated {
-        fs.write(&limits)
-            .with_context(|| format!("failed to write '{}'", fs.path::<lib::Limits>().display()))?;
+        fs.write(&limits).with_context(|| {
+            format!("failed to write '{}'", fs.path::<base::Limits>().display())
+        })?;
     }
     Ok(Output::Str(output))
 }
@@ -125,10 +126,10 @@ mod tests {
     #[case("0", YearArg(0))]
     #[case("123", YearArg(123))]
     #[case("9999", YearArg(9999))]
-    #[case("y", YearArg(lib::Date::today().year()))]
-    #[case("Y1", YearArg(lib::Date::today().year() + 1))]
-    #[case("y+10", YearArg(lib::Date::today().year() + 10))]
-    #[case("Y-10", YearArg(lib::Date::today().year() - 10))]
+    #[case("y", YearArg(base::Date::today().year()))]
+    #[case("Y1", YearArg(base::Date::today().year() + 1))]
+    #[case("y+10", YearArg(base::Date::today().year() + 10))]
+    #[case("Y-10", YearArg(base::Date::today().year() - 10))]
     fn test_yeararg_from_str(#[case] s: &str, #[case] want: YearArg) {
         assert_eq!(s.parse::<YearArg>().unwrap(), want)
     }
@@ -167,8 +168,8 @@ mod tests {
                     .with_config("{}")
                     .with_limits(r#"{"2015":1}"#),
                 final_state: testing::State::new()
-                    .with_config(lib::Config::default())
-                    .with_limits(lib::Limits::new()),
+                    .with_config(base::Config::default())
+                    .with_limits(base::Limits::new()),
             }
         ),
         (
@@ -182,7 +183,7 @@ mod tests {
                     .with_config("{}")
                     .with_limits(r#"{"2015":1}"#),
                 final_state: testing::State::new()
-                    .with_config(lib::Config::default())
+                    .with_config(base::Config::default())
                     .with_limits(r#"{"2015":1,"2016":-123}"#),
             }
         ),
@@ -192,10 +193,10 @@ mod tests {
                 invocations: &[testing::Invocation {
                     args: &["", "lim", "2015", "--view", "tfsa"],
                     res: testing::ResultMatcher::OkExact(Output::Limitprinter(
-                        lib::limitprinter::Config {
+                        base::limitprinter::Config {
                             charset: Default::default(),
                             year: 2015,
-                            kind: lib::Limitkind::Tfsa,
+                            kind: base::Limitkind::Tfsa,
                             limits: r#"{
                                 "2014": 100,
                                 "2015": 100
@@ -233,10 +234,10 @@ mod tests {
                 invocations: &[testing::Invocation {
                     args: &["", "lim"],
                     res: testing::ResultMatcher::OkExact(Output::Limitprinter(
-                        lib::limitprinter::Config {
+                        base::limitprinter::Config {
                             charset: Default::default(),
-                            year: lib::Date::today().year(),
-                            kind: lib::Limitkind::Tfsa,
+                            year: base::Date::today().year(),
+                            kind: base::Limitkind::Tfsa,
                             limits: r#"{
                                 "2014": 100,
                                 "2015": 100

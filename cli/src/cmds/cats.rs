@@ -13,8 +13,8 @@ pub struct Cats {
 }
 
 impl Cats {
-    pub fn run(self, rl: lib::Recordlist) -> anyhow::Result<Output> {
-        let rl = util::filter_rl::<_, &str>(&rl, lib::Interval::MAX, &self.category, &[]);
+    pub fn run(self, rl: base::Recordlist) -> anyhow::Result<Output> {
+        let rl = util::filter_rl::<_, &str>(&rl, base::Interval::MAX, &self.category, &[]);
         let mut cats = rl.iter().map(|r| r.category().as_str()).collect::<Vec<_>>();
         cats.sort();
         cats.dedup();

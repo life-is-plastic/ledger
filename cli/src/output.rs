@@ -9,10 +9,10 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum Output {
     Str(String),
-    TreeForSum(lib::tree::forsum::Config, lib::Interval),
-    TreeForView(lib::tree::forview::Config),
-    Barchart(lib::barchart::Config),
-    Limitprinter(lib::limitprinter::Config),
+    TreeForSum(base::tree::forsum::Config, base::Interval),
+    TreeForView(base::tree::forview::Config),
+    Barchart(base::barchart::Config),
+    Limitprinter(base::limitprinter::Config),
 }
 
 impl std::fmt::Display for Output {
@@ -55,16 +55,16 @@ mod tests {
     #[case::str_without_newline(Output::Str("asdf".into()), "asdf\n")]
     #[case::str_with_newline(Output::Str("asdf\n".into()), "asdf\n")]
     #[case::tree_for_view_empty(
-        Output::TreeForView(lib::tree::forview::Config {
+        Output::TreeForView(base::tree::forview::Config {
             charset: Default::default(),
             first_iid: 0,
-            rl: lib::Recordlist::new(),
+            rl: base::Recordlist::new(),
             leaf_string_postprocessor: None,
         }),
         "No transactions.\n",
     )]
     #[case::tree_for_view(
-        Output::TreeForView(lib::tree::forview::Config {
+        Output::TreeForView(base::tree::forview::Config {
             charset: Default::default(),
             first_iid: 0,
             rl: r#"{"d":"0000-01-01","c":"abc","a":111,"n":"note"}"#.parse().unwrap(),
@@ -78,20 +78,20 @@ mod tests {
         "),
     )]
     #[case::barchart_empty(
-        Output::Barchart(lib::barchart::Config {
+        Output::Barchart(base::barchart::Config {
             charset: Default::default(),
-            bounds: lib::Interval::MAX,
-            unit: lib::Datepart::Year,
+            bounds: base::Interval::MAX,
+            unit: base::Datepart::Year,
             term_width: 80,
-            rl: lib::Recordlist::new(),
+            rl: base::Recordlist::new(),
         }),
         "No transactions.\n",
     )]
     #[case::barchart(
-        Output::Barchart(lib::barchart::Config {
+        Output::Barchart(base::barchart::Config {
             charset: Default::default(),
-            bounds: lib::Interval::MAX,
-            unit: lib::Datepart::Year,
+            bounds: base::Interval::MAX,
+            unit: base::Datepart::Year,
             term_width: 80,
             rl: r#"{"d":"0000-01-01","c":"abc","a":111,"n":"note"}"#.parse().unwrap(),
         }),

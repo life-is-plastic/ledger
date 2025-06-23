@@ -2,9 +2,9 @@
 /// fields correspond to nonexistent files.
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct State {
-    config: Option<lib::Config>,
-    rl: Option<lib::Recordlist>,
-    limits: Option<lib::Limits>,
+    config: Option<base::Config>,
+    rl: Option<base::Recordlist>,
+    limits: Option<base::Limits>,
 }
 
 impl State {
@@ -13,38 +13,38 @@ impl State {
         Self::default()
     }
 
-    /// Sets repo's [`lib::Config`].
+    /// Sets repo's [`base::Config`].
     pub fn with_config<T>(mut self, config: T) -> Self
     where
-        T: TryInto<lib::Config> + std::fmt::Debug,
-        <T as TryInto<lib::Config>>::Error: std::fmt::Debug,
+        T: TryInto<base::Config> + std::fmt::Debug,
+        <T as TryInto<base::Config>>::Error: std::fmt::Debug,
     {
         self.config = Some(config.try_into().unwrap());
         self
     }
 
-    /// Sets repo's [`lib::Recordlist`].
+    /// Sets repo's [`base::Recordlist`].
     pub fn with_rl<T>(mut self, rl: T) -> Self
     where
-        T: TryInto<lib::Recordlist> + std::fmt::Debug,
-        <T as TryInto<lib::Recordlist>>::Error: std::fmt::Debug,
+        T: TryInto<base::Recordlist> + std::fmt::Debug,
+        <T as TryInto<base::Recordlist>>::Error: std::fmt::Debug,
     {
         self.rl = Some(rl.try_into().unwrap());
         self
     }
 
-    /// Sets repo's [`lib::Limits`].
+    /// Sets repo's [`base::Limits`].
     pub fn with_limits<T>(mut self, limits: T) -> Self
     where
-        T: TryInto<lib::Limits> + std::fmt::Debug,
-        <T as TryInto<lib::Limits>>::Error: std::fmt::Debug,
+        T: TryInto<base::Limits> + std::fmt::Debug,
+        <T as TryInto<base::Limits>>::Error: std::fmt::Debug,
     {
         self.limits = Some(limits.try_into().unwrap());
         self
     }
 
     /// Deserializes objects from `fs`.
-    pub fn from_fs(fs: &lib::Fs) -> Self {
+    pub fn from_fs(fs: &base::Fs) -> Self {
         macro_rules! read {
             ($t:ty) => {{
                 let p = fs.path::<$t>();
@@ -57,9 +57,9 @@ impl State {
         }
 
         Self {
-            config: read!(lib::Config),
-            rl: read!(lib::Recordlist),
-            limits: read!(lib::Limits),
+            config: read!(base::Config),
+            rl: read!(base::Recordlist),
+            limits: read!(base::Limits),
         }
     }
 }
@@ -79,19 +79,19 @@ impl<'a> StrState<'a> {
         Self::default()
     }
 
-    /// Sets repo's [`lib::Config`] file contents.
+    /// Sets repo's [`base::Config`] file contents.
     pub fn with_config(mut self, s: &'a str) -> Self {
         self.config = Some(s);
         self
     }
 
-    /// Sets repo's [`lib::Recordlist`] file contents.
+    /// Sets repo's [`base::Recordlist`] file contents.
     pub fn with_rl(mut self, s: &'a str) -> Self {
         self.rl = Some(s);
         self
     }
 
-    /// Sets repo's [`lib::Limits`] file contents.
+    /// Sets repo's [`base::Limits`] file contents.
     pub fn with_limits(mut self, s: &'a str) -> Self {
         self.limits = Some(s);
         self
@@ -99,10 +99,10 @@ impl<'a> StrState<'a> {
 
     /// Writes string contents verbatim to `fs`. Panics if any field is not a
     /// valid serialization of a real type.
-    pub fn to_fs(&self, fs: &lib::Fs) {
-        fn write<T>(fs: &lib::Fs, field: Option<&str>)
+    pub fn to_fs(&self, fs: &base::Fs) {
+        fn write<T>(fs: &base::Fs, field: Option<&str>)
         where
-            T: std::fmt::Debug + lib::fs::Io,
+            T: std::fmt::Debug + base::fs::Io,
             <T as std::str::FromStr>::Err: std::error::Error,
         {
             if let Some(s) = field {
@@ -112,9 +112,9 @@ impl<'a> StrState<'a> {
             }
         }
 
-        write::<lib::Config>(fs, self.config);
-        write::<lib::Recordlist>(fs, self.rl);
-        write::<lib::Limits>(fs, self.limits);
+        write::<base::Config>(fs, self.config);
+        write::<base::Recordlist>(fs, self.rl);
+        write::<base::Limits>(fs, self.limits);
     }
 
     pub fn to_state(&self) -> State {

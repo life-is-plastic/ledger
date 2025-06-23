@@ -10,7 +10,7 @@ pub struct Sum {
         help = sharedopts::INTERVAL_HELP,
         long_help = sharedopts::INTERVAL_HELP_LONG,
     )]
-    interval: lib::Interval,
+    interval: base::Interval,
 
     /// Category level to aggregate on
     ///
@@ -28,14 +28,14 @@ pub struct Sum {
 }
 
 impl Sum {
-    pub fn run(self, rl: lib::Recordlist, config: &lib::Config) -> anyhow::Result<Output> {
+    pub fn run(self, rl: base::Recordlist, config: &base::Config) -> anyhow::Result<Output> {
         let rl = util::filter_rl(
             &rl,
             self.interval,
             &self.categories_opts.categories,
             &self.categories_opts.not_categories,
         );
-        let tr_config = lib::tree::forsum::Config {
+        let tr_config = base::tree::forsum::Config {
             charset: util::charset_from_config(config),
             level: self.level,
             rl,

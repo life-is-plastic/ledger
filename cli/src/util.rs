@@ -1,5 +1,5 @@
-pub fn charset_from_config(config: &lib::Config) -> lib::Charset {
-    let mut charset = lib::Charset::default();
+pub fn charset_from_config(config: &base::Config) -> base::Charset {
+    let mut charset = base::Charset::default();
     if config.use_unicode_symbols {
         charset = charset.with_unicode()
     }
@@ -14,11 +14,11 @@ pub fn charset_from_config(config: &lib::Config) -> lib::Charset {
 /// - Matches any wildcard pattern in 'categories'
 /// - Does not match any wildcard pattern in 'not_categories'
 pub fn filter_rl<T, U>(
-    rl: &lib::Recordlist,
-    interval: lib::Interval,
+    rl: &base::Recordlist,
+    interval: base::Interval,
     categories: &[T],
     not_categories: &[U],
-) -> lib::Recordlist
+) -> base::Recordlist
 where
     T: AsRef<str>,
     U: AsRef<str>,
@@ -39,7 +39,7 @@ where
                     && !excl.iter().any(|p| p.matches(r.category().as_str()))
             }
         })
-        .collect::<lib::Recordlist>()
+        .collect::<base::Recordlist>()
 }
 
 #[cfg(test)]
@@ -49,7 +49,7 @@ mod tests {
     use rstest::rstest;
 
     #[fixture]
-    fn rl() -> lib::Recordlist {
+    fn rl() -> base::Recordlist {
         r#"
             {"d":"2015-03-01","c":"aaa","a":10000}
             {"d":"2015-03-30","c":"aaa","a":10000}
@@ -66,47 +66,47 @@ mod tests {
 
     #[rstest]
     #[case(
-        lib::Config {
+        base::Config {
             use_colored_output: false,
             use_unicode_symbols: false,
-            ..lib::Config::default()
+            ..base::Config::default()
         },
-        lib::Charset::default(),
+        base::Charset::default(),
     )]
     #[case(
-        lib::Config {
+        base::Config {
             use_colored_output: true,
             use_unicode_symbols: false,
-            ..lib::Config::default()
+            ..base::Config::default()
         },
-        lib::Charset::default().with_color(),
+        base::Charset::default().with_color(),
     )]
     #[case(
-        lib::Config {
+        base::Config {
             use_colored_output: false,
             use_unicode_symbols: true,
-            ..lib::Config::default()
+            ..base::Config::default()
         },
-        lib::Charset::default().with_unicode(),
+        base::Charset::default().with_unicode(),
     )]
     #[case(
-        lib::Config {
+        base::Config {
             use_colored_output: true,
             use_unicode_symbols: true,
-            ..lib::Config::default()
+            ..base::Config::default()
         },
-        lib::Charset::default().with_color().with_unicode(),
+        base::Charset::default().with_color().with_unicode(),
     )]
-    fn test_charset_from_config(#[case] config: lib::Config, #[case] want: lib::Charset) {
+    fn test_charset_from_config(#[case] config: base::Config, #[case] want: base::Charset) {
         let got = charset_from_config(&config);
         assert_eq!(got, want);
     }
 
     #[rstest]
-    #[case(lib::Interval::EMPTY, &["*"], &[], "")]
-    #[case(lib::Interval::MAX, &[], &[], "")]
-    #[case(lib::Interval::MAX, &["*"], &["*"], "")]
-    #[case(lib::Interval::MAX, &["*"], &[], self::rl())]
+    #[case(base::Interval::EMPTY, &["*"], &[], "")]
+    #[case(base::Interval::MAX, &[], &[], "")]
+    #[case(base::Interval::MAX, &["*"], &["*"], "")]
+    #[case(base::Interval::MAX, &["*"], &[], self::rl())]
     #[case(
         "2015-03-30:2015-05-10",
         &["*b*", "c*"],
@@ -119,11 +119,11 @@ mod tests {
         "#
     )]
     fn test_filter_rl(
-        rl: lib::Recordlist,
-        #[case] interval: lib::Interval,
+        rl: base::Recordlist,
+        #[case] interval: base::Interval,
         #[case] categories: &[&str],
         #[case] not_categories: &[&str],
-        #[case] want: lib::Recordlist,
+        #[case] want: base::Recordlist,
     ) {
         let got = filter_rl(&rl, interval, categories, not_categories);
         assert_eq!(got, want);

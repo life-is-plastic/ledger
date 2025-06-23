@@ -27,7 +27,7 @@ impl MutCase<'_> {
     /// 1. Checks if files match `final_state`
     pub fn run(self) {
         let td = tempfile::TempDir::new().unwrap();
-        let fs = lib::Fs::new(td.path());
+        let fs = base::Fs::new(td.path());
         self.initial_state.to_fs(&fs);
 
         for inv in self.invocations {

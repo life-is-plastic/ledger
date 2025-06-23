@@ -31,7 +31,7 @@ enum Commands {
 }
 
 impl Root {
-    pub fn run(self, fs: &lib::Fs) -> anyhow::Result<Output> {
+    pub fn run(self, fs: &base::Fs) -> anyhow::Result<Output> {
         if let Commands::Init(cmd) = self.command {
             return cmd.run(fs);
         }
@@ -40,12 +40,12 @@ impl Root {
             anyhow::bail!("not a repository")
         }
         let config = fs
-            .read::<lib::Config>()
-            .with_context(|| format!("failed to read '{}'", fs.path::<lib::Config>().display()))?;
-        let rl = fs.read::<lib::Recordlist>().with_context(|| {
+            .read::<base::Config>()
+            .with_context(|| format!("failed to read '{}'", fs.path::<base::Config>().display()))?;
+        let rl = fs.read::<base::Recordlist>().with_context(|| {
             format!(
                 "failed to read '{}'",
-                fs.path::<lib::Recordlist>().display()
+                fs.path::<base::Recordlist>().display()
             )
         })?;
 
@@ -66,7 +66,7 @@ pub fn main() {
     fn try_main() -> anyhow::Result<()> {
         let root = <Root as clap::Parser>::parse();
         let cwd = std::env::current_dir().context("failed to resolve current working directory")?;
-        let fs = lib::Fs::new(cwd);
+        let fs = base::Fs::new(cwd);
         let output = root.run(&fs)?;
         print!("{}", output);
         Ok(())

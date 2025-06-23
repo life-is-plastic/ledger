@@ -6,7 +6,7 @@ use anyhow::Context;
 #[derive(clap::Parser)]
 pub struct Rm {
     /// Transaction date
-    date: lib::Date,
+    date: base::Date,
 
     /// Index of transaction in DATE
     index: usize,
@@ -19,9 +19,9 @@ pub struct Rm {
 impl Rm {
     pub fn run(
         self,
-        mut rl: lib::Recordlist,
-        config: &lib::Config,
-        fs: &lib::Fs,
+        mut rl: base::Recordlist,
+        config: &base::Config,
+        fs: &base::Fs,
     ) -> anyhow::Result<Output> {
         let iid0 = self.index.wrapping_sub(config.first_index_in_date);
         if rl.get(self.date, iid0).is_none() {
@@ -29,14 +29,14 @@ impl Rm {
         }
 
         let rl_for_date = rl
-            .slice_spanning_interval(lib::Interval {
+            .slice_spanning_interval(base::Interval {
                 start: self.date,
                 end: self.date,
             })
             .iter()
-            .collect::<lib::Recordlist>();
-        let lspp = move |config: &lib::tree::forview::Config,
-                         r: &lib::Record,
+            .collect::<base::Recordlist>();
+        let lspp = move |config: &base::tree::forview::Config,
+                         r: &base::Record,
                          iid0_arg: usize,
                          mut leaf_string: String|
               -> String {
@@ -52,7 +52,7 @@ impl Rm {
             }
             leaf_string
         };
-        let tr_config = lib::tree::forview::Config {
+        let tr_config = base::tree::forview::Config {
             charset: util::charset_from_config(config),
             first_iid: config.first_index_in_date,
             rl: rl_for_date,
@@ -65,7 +65,7 @@ impl Rm {
             fs.write(&rl).with_context(|| {
                 format!(
                     "failed to write '{}'",
-                    fs.path::<lib::Recordlist>().display()
+                    fs.path::<base::Recordlist>().display()
                 )
             })?;
         }
@@ -80,13 +80,13 @@ mod tests {
     use crate::testing;
     use rstest::rstest;
 
-    /// Equality checks on `lib::tree::forview::Config` does not care about the
+    /// Equality checks on `base::tree::forview::Config` does not care about the
     /// `Some` payload of `leaf_string_postprocessor`. Rather, equality only
     /// requires either both sides to be `Some`, or both sides to be `None`.
     /// This function helps generate a dummy paylod for `Some`.
     fn dummy_lspp(
-    ) -> Box<dyn Fn(&lib::tree::forview::Config, &lib::Record, usize, String) -> String> {
-        fn f(_: &lib::tree::forview::Config, _: &lib::Record, _: usize, _: String) -> String {
+    ) -> Box<dyn Fn(&base::tree::forview::Config, &base::Record, usize, String) -> String> {
+        fn f(_: &base::tree::forview::Config, _: &base::Record, _: usize, _: String) -> String {
             String::default()
         }
         Box::new(f)
@@ -124,7 +124,7 @@ mod tests {
                 invocations: &[testing::Invocation {
                     args: &["", "rm", "0000-01-01", "1"],
                     res: testing::ResultMatcher::OkExact(Output::TreeForView(
-                        lib::tree::forview::Config {
+                        base::tree::forview::Config {
                             charset: Default::default(),
                             first_iid: 0,
                             rl: r#"
@@ -151,7 +151,7 @@ mod tests {
                 invocations: &[testing::Invocation {
                     args: &["", "rm", "0000-01-01", "1", "--yes"],
                     res: testing::ResultMatcher::OkExact(Output::TreeForView(
-                        lib::tree::forview::Config {
+                        base::tree::forview::Config {
                             charset: Default::default(),
                             first_iid: 0,
                             rl: r#"
@@ -171,7 +171,7 @@ mod tests {
                     "#
                 ),
                 final_state: testing::State::new()
-                    .with_config(lib::Config::default())
+                    .with_config(base::Config::default())
                     .with_rl(r#"{"d":"0000-01-01","c":"abc","a":111}"#),
             }
         ),
@@ -180,7 +180,7 @@ mod tests {
     #[rstest]
     #[case::dry_run(
         Rm {
-            date: lib::Date::MIN,
+            date: base::Date::MIN,
             index: 1,
             yes: false,
         },
@@ -192,7 +192,7 @@ mod tests {
     )]
     #[case::wet_run(
         Rm {
-            date: lib::Date::MIN,
+            date: base::Date::MIN,
             index: 1,
             yes: true,
         },
@@ -204,13 +204,13 @@ mod tests {
     )]
     fn test_leaf_string_postprocessor(
         #[case] rm: Rm,
-        #[case] rl: lib::Recordlist,
+        #[case] rl: base::Recordlist,
         #[case] want_in_output: &str,
     ) {
         let (fs, _td) = testing::tempfs();
         fs.write(&rl).unwrap();
         let output = rm
-            .run(rl, &lib::Config::default(), &fs)
+            .run(rl, &base::Config::default(), &fs)
             .unwrap()
             .to_string();
         assert!(

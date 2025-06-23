@@ -9,8 +9,8 @@ pub struct Init {
     reset_config: bool,
 }
 
-fn initial_config() -> lib::Config {
-    lib::Config {
+fn initial_config() -> base::Config {
+    base::Config {
         first_index_in_date: 1,
         use_colored_output: true,
         use_unicode_symbols: true,
@@ -19,14 +19,14 @@ fn initial_config() -> lib::Config {
 }
 
 impl Init {
-    pub fn run(self, fs: &lib::Fs) -> anyhow::Result<Output> {
+    pub fn run(self, fs: &base::Fs) -> anyhow::Result<Output> {
         let already_repo = fs.is_repo();
 
-        let path = fs.path::<lib::Config>();
+        let path = fs.path::<base::Config>();
         let config = if self.reset_config || !path.exists() {
             initial_config()
         } else {
-            fs.read::<lib::Config>()
+            fs.read::<base::Config>()
                 .with_context(|| format!("failed to read '{}'", path.display()))?
         };
         fs.write(&config)

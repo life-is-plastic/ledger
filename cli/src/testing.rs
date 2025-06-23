@@ -33,8 +33,8 @@ pub(crate) use generate_testcases;
 
 /// Returns a filesystem object anchored at a temporary directory. The `Fs` must
 /// not outlive the returned `TempDir`.
-pub fn tempfs() -> (lib::Fs, tempfile::TempDir) {
+pub fn tempfs() -> (base::Fs, tempfile::TempDir) {
     let td = tempfile::TempDir::new().unwrap();
-    let fs = lib::Fs::new(td.path());
+    let fs = base::Fs::new(td.path());
     (fs, td)
 }
