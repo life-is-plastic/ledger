@@ -1,5 +1,5 @@
+use crate::output::Output;
 use crate::util;
-use crate::Output;
 use anyhow::Context;
 
 /// Remove a transaction

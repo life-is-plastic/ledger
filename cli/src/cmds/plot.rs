@@ -1,6 +1,6 @@
+use crate::output::Output;
 use crate::sharedopts;
 use crate::util;
-use crate::Output;
 
 /// Plot transaction totals
 #[derive(clap::Parser)]

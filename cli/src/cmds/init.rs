@@ -1,4 +1,4 @@
-use crate::Output;
+use crate::output::Output;
 use anyhow::Context;
 
 /// Initialize reposistory in the current directory

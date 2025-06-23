@@ -1,6 +1,6 @@
-use crate::Date;
-use crate::Interval;
-use crate::Record;
+use crate::date::Date;
+use crate::interval::Interval;
+use crate::record::Record;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Recordlist(Vec<Record>);

@@ -1,6 +1,6 @@
 use std::iter::FusedIterator;
 
-use crate::Cents;
+use crate::cents::Cents;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Limits(std::collections::BTreeMap<u16, Cents>);

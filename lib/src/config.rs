@@ -1,4 +1,4 @@
-use crate::Limitkind;
+use crate::limitkind::Limitkind;
 
 /// Application config.
 #[derive(Debug, Clone, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]

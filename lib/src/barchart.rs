@@ -1,11 +1,11 @@
+use crate::aggregate::Aggregate;
+use crate::cents::Cents;
+use crate::charset::Charset;
+use crate::date::Date;
+use crate::datepart::Datepart;
+use crate::interval::Interval;
+use crate::recordlist::Recordlist;
 use crate::util;
-use crate::Aggregate;
-use crate::Cents;
-use crate::Charset;
-use crate::Date;
-use crate::Datepart;
-use crate::Interval;
-use crate::Recordlist;
 
 pub struct Barchart<'cs> {
     charset: &'cs Charset,

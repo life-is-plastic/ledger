@@ -1,5 +1,5 @@
+use crate::output::Output;
 use crate::util;
-use crate::Output;
 
 /// View unique categories
 #[derive(clap::Parser)]

@@ -7,7 +7,7 @@ mod rm;
 mod sum;
 mod view;
 
-use crate::Output;
+use crate::output::Output;
 use anyhow::Context;
 
 /// Cash flow tracker

@@ -1,7 +1,7 @@
 pub mod forsum;
 pub mod forview;
 
-use crate::Charset;
+use crate::charset::Charset;
 
 pub struct Tree<'a> {
     charset: &'a Charset,

@@ -1,6 +1,6 @@
-use crate::Config;
-use crate::Limits;
-use crate::Recordlist;
+use crate::config::Config;
+use crate::limits::Limits;
+use crate::recordlist::Recordlist;
 
 /// Application filesystem.
 pub struct Fs {

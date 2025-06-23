@@ -1,6 +1,6 @@
-use crate::Category;
-use crate::Cents;
-use crate::Date;
+use crate::category::Category;
+use crate::cents::Cents;
+use crate::date::Date;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]

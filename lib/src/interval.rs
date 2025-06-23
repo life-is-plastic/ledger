@@ -1,6 +1,6 @@
 use crate::date;
-use crate::Date;
-use crate::Datepart;
+use crate::date::Date;
+use crate::datepart::Datepart;
 
 /// Interval defined by the inclusive bound of two dates. If `start` is greater
 /// than `end`, the interval is considered empty. ALl empty intervals are

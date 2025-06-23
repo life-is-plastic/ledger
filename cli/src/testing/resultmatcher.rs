@@ -1,4 +1,4 @@
-use crate::Output;
+use crate::output::Output;
 
 /// Helps check if a command returns the expected [`anyhow::Result<Output>`].
 pub enum ResultMatcher<'a> {

@@ -1,6 +1,6 @@
+use crate::output::Output;
 use crate::sharedopts;
 use crate::util;
-use crate::Output;
 
 /// View transactions
 #[derive(clap::Parser)]

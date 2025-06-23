@@ -1,5 +1,5 @@
+use crate::testing::resultmatcher::ResultMatcher;
 use crate::testing::state;
-use crate::testing::ResultMatcher;
 
 /// A single command invocation.
 pub struct Invocation<'a> {

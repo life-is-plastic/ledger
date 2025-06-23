@@ -1,9 +1,9 @@
+use crate::charset::Charset;
+use crate::record::Record;
+use crate::recordlist::Recordlist;
 use crate::tree::Node;
+use crate::tree::Tree;
 use crate::util;
-use crate::Charset;
-use crate::Record;
-use crate::Recordlist;
-use crate::Tree;
 
 pub struct Config {
     pub charset: Charset,

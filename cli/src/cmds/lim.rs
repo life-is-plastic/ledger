@@ -1,5 +1,5 @@
+use crate::output::Output;
 use crate::util;
-use crate::Output;
 use anyhow::Context;
 use clap::builder::TypedValueParser;
 

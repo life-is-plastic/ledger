@@ -1,4 +1,4 @@
-use crate::Datepart;
+use crate::datepart::Datepart;
 
 /// A date type without time or timezone information. Values are guaranteed to
 /// be between `0000-01-01` and `9999-12-31`.
