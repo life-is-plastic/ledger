@@ -12,6 +12,7 @@ doctest = false
 anyhow = "1.0.95"
 base = { path = "../base" }
 clap = { version = "4.5.23", features = ["derive", "wrap_help"] }
+colored = "3"
 strum = "0.26.3"
 terminal_size = "0.4.1"
 wildmatch = "2.4.0"

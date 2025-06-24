@@ -9,6 +9,7 @@ edition = "2021"
 doctest = false
 
 [dependencies]
+colored = "3"
 derive_more = { version = "1.0.0", features = ["full"] }
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.134"

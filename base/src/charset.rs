@@ -8,10 +8,7 @@ pub struct Charset {
     pub chart_axis: char,
     pub chart_bar_pos: char,
     pub chart_bar_neg: char,
-    pub color_prefix_green: &'static str,
-    pub color_prefix_yellow: &'static str,
-    pub color_prefix_red: &'static str,
-    pub color_suffix: &'static str,
+    pub color: bool,
 }
 
 impl Default for Charset {
@@ -26,10 +23,7 @@ impl Default for Charset {
             chart_axis: '|',
             chart_bar_pos: '+',
             chart_bar_neg: '-',
-            color_prefix_green: "",
-            color_prefix_yellow: "",
-            color_prefix_red: "",
-            color_suffix: "",
+            color: false,
         }
     }
 }
@@ -51,10 +45,7 @@ impl Charset {
 
     pub fn with_color(self) -> Self {
         Self {
-            color_prefix_green: "\x1b[38;2;90;165;90m",
-            color_prefix_yellow: "\x1b[38;2;165;165;90m",
-            color_prefix_red: "\x1b[38;2;165;90;90m",
-            color_suffix: "\x1b[0m",
+            color: true,
             ..self
         }
     }

@@ -42,13 +42,18 @@ impl Rm {
               -> String {
             if r.date() == self.date && iid0_arg == iid0 {
                 if self.yes {
-                    leaf_string.insert_str(0, config.charset.color_prefix_red);
-                    leaf_string.push_str(" <- [REMOVED]");
+                    let mut msg = " <- [REMOVED]".to_string();
+                    if config.charset.color {
+                        msg = colored::Colorize::red(msg.as_str()).to_string();
+                    }
+                    leaf_string.push_str(&msg);
                 } else {
-                    leaf_string.insert_str(0, config.charset.color_prefix_yellow);
-                    leaf_string.push_str(" <- [WOULD BE REMOVED]");
+                    let mut msg = " <- [WOULD BE REMOVED]".to_string();
+                    if config.charset.color {
+                        msg = colored::Colorize::yellow(msg.as_str()).to_string();
+                    }
+                    leaf_string.push_str(&msg);
                 }
-                leaf_string.push_str(config.charset.color_suffix);
             }
             leaf_string
         };

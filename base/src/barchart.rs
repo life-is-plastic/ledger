@@ -103,11 +103,11 @@ impl Barchart<'_> {
             let val = self.pos.get(dt).unwrap_or_default();
             let barlen = self.barlen(val);
             if barlen > 0 {
-                w.write_str(self.charset.color_prefix_green)?;
-                for _ in 0..barlen {
-                    w.write_char(self.charset.chart_bar_pos)?;
+                let mut bars = self.charset.chart_bar_pos.to_string().repeat(barlen);
+                if self.charset.color {
+                    bars = colored::Colorize::green(bars.as_str()).to_string();
                 }
-                w.write_str(self.charset.color_suffix)?;
+                w.write_str(&bars)?;
                 w.write_char(' ')?;
             }
             writeln!(w, "{}", val)?;
@@ -123,11 +123,11 @@ impl Barchart<'_> {
         let val = self.neg.get(dt).unwrap_or_default();
         let barlen = self.barlen(val);
         if barlen > 0 {
-            w.write_str(self.charset.color_prefix_red)?;
-            for _ in 0..barlen {
-                w.write_char(self.charset.chart_bar_neg)?;
+            let mut bars = self.charset.chart_bar_neg.to_string().repeat(barlen);
+            if self.charset.color {
+                bars = colored::Colorize::red(bars.as_str()).to_string();
             }
-            w.write_str(self.charset.color_suffix)?;
+            w.write_str(&bars)?;
             w.write_char(' ')?;
         }
         writeln!(w, "{}", val)?;
