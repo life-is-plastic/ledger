@@ -1,6 +1,7 @@
+use anyhow::Context;
+
 use crate::output::Output;
 use crate::util;
-use anyhow::Context;
 
 /// Log a transaction
 #[derive(clap::Parser)]

@@ -8,8 +8,9 @@ mod rm;
 mod sum;
 mod view;
 
-use crate::output::Output;
 use anyhow::Context;
+
+use crate::output::Output;
 
 /// Cash flow tracker
 #[derive(clap::Parser)]

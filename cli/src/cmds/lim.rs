@@ -1,7 +1,8 @@
-use crate::output::Output;
-use crate::util;
 use anyhow::Context;
 use clap::builder::TypedValueParser;
+
+use crate::output::Output;
+use crate::util;
 
 /// Manage and view contribution limits
 #[derive(clap::Parser)]

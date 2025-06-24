@@ -1,5 +1,3 @@
-use std::iter::FusedIterator;
-
 use crate::cents::Cents;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -30,7 +28,7 @@ impl Limits {
     pub fn range(
         &self,
         range: impl std::ops::RangeBounds<u16>,
-    ) -> impl DoubleEndedIterator<Item = (u16, Cents)> + FusedIterator<Item = (u16, Cents)> + '_
+    ) -> impl DoubleEndedIterator<Item = (u16, Cents)> + std::iter::FusedIterator<Item = (u16, Cents)> + '_
     {
         self.0.range(range).map(|(&k, &v)| (k, v))
     }

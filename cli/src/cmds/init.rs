@@ -1,5 +1,6 @@
-use crate::output::Output;
 use anyhow::Context;
+
+use crate::output::Output;
 
 /// Initialize reposistory in the current directory
 #[derive(clap::Parser)]
