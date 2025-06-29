@@ -25,7 +25,13 @@ impl std::fmt::Display for Output {
                     writeln!(f, "{}", s)
                 }
             }
-            Output::TreeForSum(config, interval) => writeln!(f, "{}{}", config.to_tree(), interval),
+            Output::TreeForSum(config, interval) => write!(
+                f,
+                "{} to {}\n{}",
+                interval.start,
+                interval.end,
+                config.to_tree(),
+            ),
             Output::TreeForView(config) => {
                 if config.rl.is_empty() {
                     writeln!(f, "No transactions.")
