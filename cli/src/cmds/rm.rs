@@ -13,8 +13,8 @@ pub struct Rm {
     index: usize,
 
     /// Execute the removal instead of displaying dry run changes
-    #[arg(short, long)]
-    yes: bool,
+    #[arg(long)]
+    confirm: bool,
 }
 
 impl Rm {
@@ -42,7 +42,7 @@ impl Rm {
                          mut leaf_string: String|
               -> String {
             if r.date() == self.date && iid0_arg == iid0 {
-                if self.yes {
+                if self.confirm {
                     let mut msg = " <- [REMOVED]".to_string();
                     if config.charset.color {
                         msg = colored::Colorize::red(msg.as_str()).to_string();
@@ -65,7 +65,7 @@ impl Rm {
             leaf_string_postprocessor: Some(Box::new(lspp)),
         };
 
-        if self.yes {
+        if self.confirm {
             rl.remove(self.date, iid0)
                 .expect("record should have already been verified to exist");
             fs.write(&rl).with_context(|| {
@@ -103,7 +103,7 @@ mod tests {
             nonexistent,
             testing::Case {
                 invocations: &[testing::Invocation {
-                    args: &["", "rm", "0000-01-01", "0", "--yes"],
+                    args: &["", "rm", "0000-01-01", "0", "--confirm"],
                     res: testing::ResultMatcher::ErrGlob("nonexistent transaction"),
                 }],
                 initial_state: testing::StrState::new().with_config("{}"),
@@ -155,7 +155,7 @@ mod tests {
             wet_run,
             testing::MutCase {
                 invocations: &[testing::Invocation {
-                    args: &["", "rm", "0000-01-01", "1", "--yes"],
+                    args: &["", "rm", "0000-01-01", "1", "--confirm"],
                     res: testing::ResultMatcher::OkExact(Output::TreeForView(
                         base::tree::forview::Config {
                             charset: Default::default(),
@@ -188,7 +188,7 @@ mod tests {
         Rm {
             date: base::Date::MIN,
             index: 1,
-            yes: false,
+            confirm: false,
         },
         r#"
             {"d":"0000-01-01","c":"abc","a":111}
@@ -200,7 +200,7 @@ mod tests {
         Rm {
             date: base::Date::MIN,
             index: 1,
-            yes: true,
+            confirm: true,
         },
         r#"
             {"d":"0000-01-01","c":"abc","a":111}
