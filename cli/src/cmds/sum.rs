@@ -29,12 +29,15 @@ pub struct Sum {
 
 impl Sum {
     pub fn run(self, rl: base::Recordlist, config: &base::Config) -> anyhow::Result<Output> {
-        let rl = util::filter_rl(
-            &rl,
-            self.interval,
+        let categories = util::preprocess_categories(
             &self.categories_opts.categories,
-            &self.categories_opts.not_categories,
+            self.categories_opts.fullmatch,
         );
+        let not_categories = util::preprocess_categories(
+            &self.categories_opts.not_categories,
+            self.categories_opts.fullmatch,
+        );
+        let rl = util::filter_rl(&rl, self.interval, &categories, &not_categories);
         let tr_config = base::tree::forsum::Config {
             charset: util::charset_from_config(config),
             level: self.level,

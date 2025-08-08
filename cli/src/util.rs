@@ -9,6 +9,35 @@ pub fn charset_from_config(config: &base::Config) -> base::Charset {
     charset
 }
 
+/// If `fullmatch` is false, ensures all categories starts with and ends with
+/// `*`, except for empty categories which are left alone. If `fullmatch` is
+/// true, does not modify categories.
+pub fn preprocess_categories<'a>(
+    categories: &'a [String],
+    fullmatch: bool,
+) -> std::borrow::Cow<'a, [String]> {
+    if fullmatch {
+        return categories.into();
+    }
+    return categories
+        .iter()
+        .map(|s| {
+            let mut s2 = s.clone();
+            if s2.is_empty() {
+                return s2;
+            }
+            if !s2.starts_with('*') {
+                s2.insert(0, '*');
+            }
+            if !s2.ends_with('*') {
+                s2.push('*');
+            }
+            s2
+        })
+        .collect::<Vec<_>>()
+        .into();
+}
+
 /// Returns a new record list such that each record:
 /// - Is in 'interval'
 /// - Matches any wildcard pattern in 'categories'
@@ -99,6 +128,28 @@ mod tests {
     )]
     fn test_charset_from_config(#[case] config: base::Config, #[case] want: base::Charset) {
         let got = charset_from_config(&config);
+        assert_eq!(got, want);
+    }
+
+    #[rstest]
+    #[case(&[], /*fullmatch=*/true, &[])]
+    #[case(&[], /*fullmatch=*/false, &[])]
+    #[case(
+        &["1".into(), "".into(), "2*".into(), "**3*3".into()],
+        /*fullmatch=*/true,
+        &["1", "", "2*", "**3*3"]
+    )]
+    #[case(
+        &["1".into(), "".into(), "2*".into(), "**3*3".into()],
+        /*fullmatch=*/false,
+        &["*1*", "","*2*", "**3*3*"]
+    )]
+    fn test_preprocess_categories(
+        #[case] categories: &[String],
+        #[case] fullmatch: bool,
+        #[case] want: &[&str],
+    ) {
+        let got = preprocess_categories(categories, fullmatch);
         assert_eq!(got, want);
     }
 

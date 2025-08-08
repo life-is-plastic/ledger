@@ -58,12 +58,15 @@ impl Plot {
                 .parse()
                 .expect("value should be convertible to Interval object")
         });
-        let rl = util::filter_rl(
-            &rl,
-            interval,
+        let categories = util::preprocess_categories(
             &self.categories_opts.categories,
-            &self.categories_opts.not_categories,
+            self.categories_opts.fullmatch,
         );
+        let not_categories = util::preprocess_categories(
+            &self.categories_opts.not_categories,
+            self.categories_opts.fullmatch,
+        );
+        let rl = util::filter_rl(&rl, interval, &categories, &not_categories);
         let chart_config = base::barchart::Config {
             charset: util::charset_from_config(config),
             bounds: interval,

@@ -1,3 +1,9 @@
+pub const FULLMATCH_HELP: &str = "Include categories only if they fully match the given patterns";
+pub const FULLMATCH_HELP_LONG: &str =
+    "Include categories only if they fully match the given patterns
+
+Otherwise, '*' is implicitly prepended and appended to all patterns.";
+
 pub const INTERVAL_HELP: &str = "Interval of interest";
 pub const INTERVAL_HELP_LONG: &str = "Interval of interest
 
@@ -17,6 +23,9 @@ yn = yn:Yn";
 
 #[derive(clap::Args)]
 pub struct CategoriesOpts {
+    #[arg(long, help = FULLMATCH_HELP, long_help = FULLMATCH_HELP_LONG)]
+    pub fullmatch: bool,
+
     /// Wildcard patterns to match categories of interest
     ///
     /// Use commas to separate multiple patterns. A transaction is included if

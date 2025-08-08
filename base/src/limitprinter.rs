@@ -24,7 +24,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn to_limitprinter(&self) -> Limitprinter {
+    pub fn to_limitprinter(&'_ self) -> Limitprinter<'_> {
         let limits = self
             .limits
             .range(..=self.year)

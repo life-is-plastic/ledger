@@ -18,12 +18,15 @@ pub struct View {
 
 impl View {
     pub fn run(self, rl: base::Recordlist, config: &base::Config) -> anyhow::Result<Output> {
-        let rl = util::filter_rl(
-            &rl,
-            self.interval,
+        let categories = util::preprocess_categories(
             &self.categories_opts.categories,
-            &self.categories_opts.not_categories,
+            self.categories_opts.fullmatch,
         );
+        let not_categories = util::preprocess_categories(
+            &self.categories_opts.not_categories,
+            self.categories_opts.fullmatch,
+        );
+        let rl = util::filter_rl(&rl, self.interval, &categories, &not_categories);
         let tr_config = base::tree::forview::Config {
             charset: util::charset_from_config(config),
             first_iid: config.first_index_in_date,

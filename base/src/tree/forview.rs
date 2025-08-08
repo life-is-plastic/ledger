@@ -62,7 +62,7 @@ impl std::fmt::Debug for Config {
 }
 
 impl Config {
-    pub fn to_tree(&self) -> Tree {
+    pub fn to_tree(&'_ self) -> Tree<'_> {
         let alignment_charlen = self.get_alignment_charlen();
         let mut root = Node::default();
         for (iid0, r) in self.rl.iter_with_iid() {

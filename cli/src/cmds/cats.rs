@@ -1,9 +1,13 @@
 use crate::output::Output;
+use crate::sharedopts;
 use crate::util;
 
 /// View unique categories
 #[derive(clap::Parser)]
 pub struct Cats {
+    #[arg(long, help = sharedopts::FULLMATCH_HELP, long_help = sharedopts::FULLMATCH_HELP_LONG)]
+    pub fullmatch: bool,
+
     /// Wildcard pattern to match categories of interest
     ///
     /// If multiple patterns are provided, include categories that match any
@@ -14,7 +18,8 @@ pub struct Cats {
 
 impl Cats {
     pub fn run(self, rl: base::Recordlist) -> anyhow::Result<Output> {
-        let rl = util::filter_rl::<_, &str>(&rl, base::Interval::MAX, &self.category, &[]);
+        let categories = util::preprocess_categories(&self.category, self.fullmatch);
+        let rl = util::filter_rl::<_, &str>(&rl, base::Interval::MAX, &categories, &[]);
         let mut cats = rl.iter().map(|r| r.category().as_str()).collect::<Vec<_>>();
         cats.sort();
         cats.dedup();
@@ -63,6 +68,38 @@ mod tests {
                 invocations: &[testing::Invocation {
                     args: &["", "cats", "bbb", "aaa"],
                     res: testing::ResultMatcher::OkStrGlob("aaa\nbbb"),
+                }],
+                initial_state: testing::StrState::new().with_config("{}").with_rl(
+                    r#"
+                        {"d":"2014-01-01","c":"ccc","a":100}
+                        {"d":"2015-01-01","c":"bbb","a":100}
+                        {"d":"2016-01-01","c":"aaa","a":100}
+                    "#
+                ),
+            }
+        ),
+        (
+            fullmatch_off,
+            testing::Case {
+                invocations: &[testing::Invocation {
+                    args: &["", "cats", "*b", "aa"],
+                    res: testing::ResultMatcher::OkStrGlob("aaa\nbbb"),
+                }],
+                initial_state: testing::StrState::new().with_config("{}").with_rl(
+                    r#"
+                        {"d":"2014-01-01","c":"ccc","a":100}
+                        {"d":"2015-01-01","c":"bbb","a":100}
+                        {"d":"2016-01-01","c":"aaa","a":100}
+                    "#
+                ),
+            }
+        ),
+        (
+            fullmatch_on,
+            testing::Case {
+                invocations: &[testing::Invocation {
+                    args: &["", "cats", "--fullmatch", "*b", "aa"],
+                    res: testing::ResultMatcher::OkStrGlob("bbb"),
                 }],
                 initial_state: testing::StrState::new().with_config("{}").with_rl(
                     r#"

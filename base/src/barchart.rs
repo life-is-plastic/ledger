@@ -28,7 +28,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn to_barchart(&self) -> Barchart {
+    pub fn to_barchart(&'_ self) -> Barchart<'_> {
         let bounds = self.rl.spanned_interval().intersection(self.bounds);
         let mut pos = Aggregate::<Date, Cents>::default();
         let mut neg = Aggregate::<Date, Cents>::default();
