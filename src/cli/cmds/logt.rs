@@ -7,7 +7,9 @@ use crate::cli;
 #[derive(clap::Parser)]
 pub struct Logt {
     /// Transaction template
-    template: String,
+    ///
+    /// If omitted, displays the available templates.
+    template: Option<String>,
 
     /// Transaction date
     #[arg(default_value = "d")]
@@ -21,7 +23,17 @@ impl Logt {
         config: &base::Config,
         fs: &base::Fs,
     ) -> anyhow::Result<cli::Output> {
-        let Some(tmpl) = config.templates.get(&self.template) else {
+        // TODO:
+        // * Make output prettier
+        // * Add tests
+        let tmpl_name = match &self.template {
+            Some(name) => name.as_str(),
+            None => {
+                let s = serde_json::to_string_pretty(&config.templates)?;
+                return Ok(cli::Output::Str(s));
+            }
+        };
+        let Some(tmpl) = config.templates.get(tmpl_name) else {
             anyhow::bail!("unknown template");
         };
         for entry in tmpl {

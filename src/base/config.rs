@@ -9,7 +9,7 @@ pub struct Config {
     pub unsigned_is_negative: bool,
     pub use_colored_output: bool,
     pub use_unicode_symbols: bool,
-    pub templates: std::collections::HashMap<String, Vec<TemplateEntry>>,
+    pub templates: std::collections::BTreeMap<String, Vec<TemplateEntry>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
