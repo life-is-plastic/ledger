@@ -11,8 +11,25 @@ opt-level = "z"   # Optimize for binary size
 panic = "abort"   # Smaller binary size than "unwind"
 strip = "symbols" # Remove debug symbols to reduce binary size
 
-[workspace]
-members = ["base", "cli"]
-
 [dependencies]
-cli = { path = "cli" }
+anyhow = "1.0.95"
+clap = { version = "4.5.23", features = ["derive", "wrap_help"] }
+colored = "3"
+derive_more = { version = "1.0.0", features = ["full"] }
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.134"
+strum = { version = "0.26.3", features = ["derive"] }
+terminal_size = "0.4.1"
+thiserror = "2.0.9"
+time = { version = "0.3.37", features = [
+    "local-offset",
+    "macros",
+    "serde-human-readable",
+] }
+wildmatch = "2.4.0"
+
+[dev-dependencies]
+indoc = "2.0.5"
+rstest = "0.24.0"
+tempfile = "3.15.0"
+text-diff = "0.4.0"
