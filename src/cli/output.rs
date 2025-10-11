@@ -11,6 +11,7 @@ use crate::base;
 #[derive(Debug, PartialEq, Eq)]
 pub enum Output {
     Str(String),
+    TreeForLogt(base::tree::forlogt::Config),
     TreeForSum(base::tree::forsum::Config, base::Interval),
     TreeForView(base::tree::forview::Config),
     Barchart(base::barchart::Config),
@@ -25,6 +26,13 @@ impl std::fmt::Display for Output {
                     write!(f, "{}", s)
                 } else {
                     writeln!(f, "{}", s)
+                }
+            }
+            Output::TreeForLogt(config) => {
+                if config.templates.is_empty() {
+                    writeln!(f, "No templates.")
+                } else {
+                    write!(f, "{}", config.to_tree())
                 }
             }
             Output::TreeForSum(config, interval) => write!(

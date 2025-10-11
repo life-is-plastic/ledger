@@ -310,7 +310,7 @@ mod tests {
                     `-- 1 ------------ 1.11  ddd
         "),
     )]
-    fn test_into_tree(#[case] first_iid: usize, #[case] rl: base::Recordlist, #[case] want: &str) {
+    fn test_to_tree(#[case] first_iid: usize, #[case] rl: base::Recordlist, #[case] want: &str) {
         let config = Config {
             charset: base::Charset::default(),
             first_iid,

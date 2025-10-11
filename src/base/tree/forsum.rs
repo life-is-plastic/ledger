@@ -203,7 +203,7 @@ mod tests {
             `-- Total -- (125.67)
         "),
     )]
-    fn test_into_tree(#[case] level: usize, #[case] rl: base::Recordlist, #[case] want: &str) {
+    fn test_to_tree(#[case] level: usize, #[case] rl: base::Recordlist, #[case] want: &str) {
         let config = Config {
             charset: base::Charset::default(),
             level,

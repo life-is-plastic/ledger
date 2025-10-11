@@ -23,15 +23,12 @@ impl Logt {
         config: &base::Config,
         fs: &base::Fs,
     ) -> anyhow::Result<cli::Output> {
-        // TODO:
-        // * Make output prettier
-        // * Add tests
-        let tmpl_name = match &self.template {
-            Some(name) => name.as_str(),
-            None => {
-                let s = serde_json::to_string_pretty(&config.templates)?;
-                return Ok(cli::Output::Str(s));
-            }
+        let Some(tmpl_name) = &self.template else {
+            let tr_config = base::tree::forlogt::Config {
+                charset: cli::util::charset_from_config(config),
+                templates: config.templates.clone(),
+            };
+            return Ok(cli::Output::TreeForLogt(tr_config));
         };
         let Some(tmpl) = config.templates.get(tmpl_name) else {
             anyhow::bail!("unknown template");

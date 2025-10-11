@@ -1,3 +1,4 @@
+pub mod forlogt;
 pub mod forsum;
 pub mod forview;
 
