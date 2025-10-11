@@ -35,7 +35,7 @@ pub struct Log {
 
 impl Log {
     pub fn run(
-        self,
+        &self,
         mut rl: base::Recordlist,
         config: &base::Config,
         fs: &base::Fs,
@@ -46,9 +46,9 @@ impl Log {
 
         let r = base::Record::new(
             self.date,
-            self.category,
-            self.amount.into_cents(config.unsigned_is_negative),
-            self.note,
+            self.category.clone(),
+            self.amount.to_cents(config.unsigned_is_negative),
+            self.note.clone(),
         );
         rl.insert(r);
         fs.write(&rl).with_context(|| {
@@ -74,16 +74,16 @@ impl Log {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 enum CentsArg {
     Signed(base::Cents),
     Unsigned(base::Cents),
 }
 
 impl CentsArg {
-    fn into_cents(self, unsigned_is_negative: bool) -> base::Cents {
+    fn to_cents(&self, unsigned_is_negative: bool) -> base::Cents {
         match self {
-            CentsArg::Signed(x) => x,
+            CentsArg::Signed(x) => *x,
             CentsArg::Unsigned(x) => {
                 if unsigned_is_negative {
                     -x.abs()
@@ -128,7 +128,7 @@ mod tests {
         #[case] unsigned_is_negative: bool,
         #[case] want: base::Cents,
     ) {
-        assert_eq!(arg.into_cents(unsigned_is_negative), want)
+        assert_eq!(arg.to_cents(unsigned_is_negative), want)
     }
 
     cli::testing::generate_testcases![

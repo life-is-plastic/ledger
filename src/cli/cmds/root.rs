@@ -25,8 +25,8 @@ enum Commands {
 }
 
 impl Root {
-    pub fn run(self, fs: &base::Fs) -> anyhow::Result<cli::Output> {
-        if let Commands::Init(cmd) = self.command {
+    pub fn run(&self, fs: &base::Fs) -> anyhow::Result<cli::Output> {
+        if let Commands::Init(cmd) = &self.command {
             return cmd.run(fs);
         }
 
@@ -43,7 +43,7 @@ impl Root {
             )
         })?;
 
-        match self.command {
+        match &self.command {
             Commands::Init(_) => unreachable!(),
             Commands::Log(cmd) => cmd.run(rl, &config, fs),
             Commands::Logt(cmd) => cmd.run(rl, &config, fs),

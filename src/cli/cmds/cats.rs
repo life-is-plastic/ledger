@@ -16,7 +16,7 @@ pub struct Cats {
 }
 
 impl Cats {
-    pub fn run(self, rl: base::Recordlist) -> anyhow::Result<cli::Output> {
+    pub fn run(&self, rl: base::Recordlist) -> anyhow::Result<cli::Output> {
         let categories = cli::util::preprocess_categories(&self.category, self.fullmatch);
         let rl = cli::util::filter_rl::<_, &str>(&rl, base::Interval::MAX, &categories, &[]);
         let mut cats = rl.iter().map(|r| r.category().as_str()).collect::<Vec<_>>();

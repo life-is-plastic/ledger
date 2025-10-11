@@ -16,7 +16,7 @@ pub struct View {
 }
 
 impl View {
-    pub fn run(self, rl: base::Recordlist, config: &base::Config) -> anyhow::Result<cli::Output> {
+    pub fn run(&self, rl: base::Recordlist, config: &base::Config) -> anyhow::Result<cli::Output> {
         let categories = cli::util::preprocess_categories(
             &self.categories_opts.categories,
             self.categories_opts.fullmatch,

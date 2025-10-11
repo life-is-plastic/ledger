@@ -19,7 +19,7 @@ pub struct Rm {
 
 impl Rm {
     pub fn run(
-        self,
+        &self,
         mut rl: base::Recordlist,
         config: &base::Config,
         fs: &base::Fs,
@@ -36,13 +36,16 @@ impl Rm {
             })
             .iter()
             .collect::<base::Recordlist>();
+
+        let dt = self.date;
+        let confirm = self.confirm;
         let lspp = move |config: &base::tree::forview::Config,
                          r: &base::Record,
                          iid0_arg: usize,
                          mut leaf_string: String|
               -> String {
-            if r.date() == self.date && iid0_arg == iid0 {
-                if self.confirm {
+            if r.date() == dt && iid0_arg == iid0 {
+                if confirm {
                     let mut msg = " <- [REMOVED]".to_string();
                     if config.charset.color {
                         msg = colored::Colorize::red(msg.as_str()).to_string();

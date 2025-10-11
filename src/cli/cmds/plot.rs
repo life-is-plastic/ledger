@@ -39,7 +39,7 @@ struct Units {
 }
 
 impl Plot {
-    pub fn run(self, rl: base::Recordlist, config: &base::Config) -> anyhow::Result<Output> {
+    pub fn run(&self, rl: base::Recordlist, config: &base::Config) -> anyhow::Result<Output> {
         let unit = if self.units.y {
             base::Datepart::Year
         } else if self.units.m {

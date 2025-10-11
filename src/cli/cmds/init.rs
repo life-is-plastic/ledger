@@ -21,7 +21,7 @@ fn initial_config() -> base::Config {
 }
 
 impl Init {
-    pub fn run(self, fs: &base::Fs) -> anyhow::Result<cli::Output> {
+    pub fn run(&self, fs: &base::Fs) -> anyhow::Result<cli::Output> {
         let already_repo = fs.is_repo();
 
         let path = fs.path::<base::Config>();

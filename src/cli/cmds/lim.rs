@@ -63,7 +63,7 @@ impl std::str::FromStr for YearArg {
 
 impl Lim {
     pub fn run(
-        self,
+        &self,
         rl: base::Recordlist,
         config: &base::Config,
         fs: &base::Fs,

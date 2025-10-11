@@ -18,7 +18,7 @@ pub struct Logt {
 
 impl Logt {
     pub fn run(
-        self,
+        &self,
         mut rl: base::Recordlist,
         config: &base::Config,
         fs: &base::Fs,
