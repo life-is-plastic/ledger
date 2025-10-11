@@ -13,7 +13,7 @@ impl Config {
     const NET: &str = "Net";
     const TOTAL: &str = "Total";
 
-    pub fn to_tree<'a>(&'a self) -> base::Tree<'a> {
+    pub fn to_tree<'a>(&'a self) -> base::Tree {
         let mut pos = base::Aggregate::<&str, base::Cents>::default();
         let mut neg = base::Aggregate::<&str, base::Cents>::default();
         for r in self.rl.iter() {
@@ -63,7 +63,7 @@ impl Config {
         self.add_vec_to_tree(&mut root, negv, Self::OUT, alignment_charlen);
         self.add_vec_to_tree(&mut root, totv, Self::NET, alignment_charlen);
         base::Tree {
-            charset: &self.charset,
+            charset: self.charset.clone(),
             root,
         }
     }

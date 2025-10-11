@@ -1,7 +1,7 @@
 use crate::base;
 
-pub struct Barchart<'cs> {
-    charset: &'cs base::Charset,
+pub struct Barchart {
+    charset: base::Charset,
     bounds: base::Interval,
     unit: base::Datepart,
     pos: base::Aggregate<base::Date, base::Cents>,
@@ -21,7 +21,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn to_barchart(&'_ self) -> Barchart<'_> {
+    pub fn to_barchart(&self) -> Barchart {
         let bounds = self.rl.spanned_interval().intersection(self.bounds);
         let mut pos = base::Aggregate::<base::Date, base::Cents>::default();
         let mut neg = base::Aggregate::<base::Date, base::Cents>::default();
@@ -56,7 +56,7 @@ impl Config {
             - (-max_abs_val).charlen(); // max 27
 
         Barchart {
-            charset: &self.charset,
+            charset: self.charset.clone(),
             bounds,
             unit: self.unit,
             pos,
@@ -68,7 +68,7 @@ impl Config {
     }
 }
 
-impl Barchart<'_> {
+impl Barchart {
     fn label(&self, dt: base::Date) -> String {
         let fmt = match self.unit {
             base::Datepart::Year => time::macros::format_description!("[year]"),
@@ -124,7 +124,7 @@ impl Barchart<'_> {
     }
 }
 
-impl std::fmt::Display for Barchart<'_> {
+impl std::fmt::Display for Barchart {
     /// Writes a terminating newline.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for interval in self.bounds.iter(self.unit) {

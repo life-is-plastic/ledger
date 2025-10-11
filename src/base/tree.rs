@@ -3,8 +3,8 @@ pub mod forview;
 
 use crate::base;
 
-pub struct Tree<'a> {
-    charset: &'a base::Charset,
+pub struct Tree {
+    charset: base::Charset,
     root: Node,
 }
 
@@ -23,7 +23,7 @@ impl Node {
     }
 }
 
-impl std::fmt::Display for Tree<'_> {
+impl std::fmt::Display for Tree {
     /// Writes a terminating newline.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn write_node(
@@ -56,7 +56,7 @@ impl std::fmt::Display for Tree<'_> {
                     f,
                     &mut preprefix,
                     i >= lv1.children.len() - 1,
-                    self.charset,
+                    &self.charset,
                 )?;
             }
         }
@@ -73,7 +73,7 @@ mod tests {
     fn test_to_string() {
         let mut tr = Tree {
             root: Node::default(),
-            charset: &base::Charset::default(),
+            charset: base::Charset::default(),
         };
         assert_eq!(tr.to_string(), "");
 
