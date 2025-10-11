@@ -49,7 +49,7 @@ impl Date {
     }
 
     pub fn from_ymd(year: u16, month: u16, day: u16) -> Option<Self> {
-        let year = i32::try_from(year).ok()?;
+        let year = i32::from(year);
         let month = time::Month::try_from(u8::try_from(month).ok()?).ok()?;
         let day = u8::try_from(day).ok()?;
         time::Date::from_calendar_date(year, month, day)

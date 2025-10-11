@@ -69,10 +69,6 @@ impl Config {
 }
 
 impl Barchart<'_> {
-    pub fn is_empty(&self) -> bool {
-        self.bounds.is_empty()
-    }
-
     fn label(&self, dt: base::Date) -> String {
         let fmt = match self.unit {
             base::Datepart::Year => time::macros::format_description!("[year]"),

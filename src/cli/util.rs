@@ -21,7 +21,7 @@ pub fn preprocess_categories<'a>(
     if fullmatch {
         return categories.into();
     }
-    return categories
+    categories
         .iter()
         .map(|s| {
             let mut s2 = s.clone();
@@ -37,7 +37,7 @@ pub fn preprocess_categories<'a>(
             s2
         })
         .collect::<Vec<_>>()
-        .into();
+        .into()
 }
 
 /// Returns a new record list such that each record:

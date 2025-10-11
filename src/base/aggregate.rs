@@ -45,10 +45,6 @@ impl<K, V> Aggregate<K, V> {
         self.m.is_empty()
     }
 
-    pub fn len(&self) -> usize {
-        self.m.len()
-    }
-
     pub fn add(&mut self, key: K, value: V)
     where
         K: Copy + Eq + std::hash::Hash,

@@ -38,7 +38,7 @@ impl Log {
         self,
         mut rl: base::Recordlist,
         config: &base::Config,
-        fs: &base::fs::Fs,
+        fs: &base::Fs,
     ) -> anyhow::Result<cli::Output> {
         if !self.create && !rl.iter().any(|r| r.category() == &self.category) {
             anyhow::bail!("nonexistent category")

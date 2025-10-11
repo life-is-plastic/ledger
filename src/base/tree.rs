@@ -23,12 +23,6 @@ impl Node {
     }
 }
 
-impl Tree<'_> {
-    pub fn is_empty(&self) -> bool {
-        self.root.children.is_empty()
-    }
-}
-
 impl std::fmt::Display for Tree<'_> {
     /// Writes a terminating newline.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -81,7 +75,6 @@ mod tests {
             root: Node::default(),
             charset: &base::Charset::default(),
         };
-        assert!(tr.is_empty());
         assert_eq!(tr.to_string(), "");
 
         macro_rules! push {
@@ -119,7 +112,6 @@ mod tests {
             }
         }
 
-        assert!(!tr.is_empty());
         assert_eq!(
             tr.to_string(),
             indoc!(
